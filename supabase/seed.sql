@@ -1,0 +1,2 @@
+-- Seed data is optional - the app creates data through the UI and SMS
+-- This file is a placeholder for local development seeding
