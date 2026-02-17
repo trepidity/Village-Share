@@ -1,3 +1,13 @@
+# VillageShare - Borrow and Loan your Stuff
+
+This application makes it possible to create a shop, kitchen, etc. place items into that location to be loaned out to friends and family.
+
+Friends and family are able to request, borrow, checkout, checkin items.
+Items can be reserved, and owners can put blackout dates.
+
+
+The whole interaction is through an AI chatbotover SMS.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
