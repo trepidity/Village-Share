@@ -58,6 +58,12 @@ export function parseMessage(message: string): ParsedIntent {
     return { ...borrowResult, raw }
   }
 
+  // --- AVAILABILITY ---
+  const availabilityResult = matchAvailability(lower, text)
+  if (availabilityResult) {
+    return { ...availabilityResult, raw }
+  }
+
   // --- SEARCH ---
   const searchResult = matchSearch(lower, text)
   if (searchResult) {
@@ -255,6 +261,65 @@ function matchBorrow(
   // Exact keyword
   if (/^borrow$/.test(lower)) {
     return { type: 'BORROW', confidence: 1.0, entities: {} }
+  }
+
+  return null
+}
+
+function matchAvailability(
+  lower: string,
+  original: string
+): Omit<ParsedIntent, 'raw'> | null {
+  // "check [item] availability"
+  const checkAvail = lower.match(
+    /^check\s+(?:the\s+)?(.+?)\s+availability$/
+  )
+  if (checkAvail) {
+    return {
+      type: 'AVAILABILITY',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(checkAvail[1]) },
+    }
+  }
+
+  // "is [item] available/free/in use/being used?" with optional date
+  const isAvail = lower.match(
+    /^is\s+(?:the\s+)?(.+?)\s+(?:available|free|in use|being used)(?:\s+(.+?))?\??$/
+  )
+  if (isAvail) {
+    const entities: ParsedIntent['entities'] = {
+      itemName: cleanEntity(isAvail[1]),
+    }
+    if (isAvail[2]) {
+      const dateEntities = extractDates(isAvail[2])
+      if (dateEntities.date) entities.date = dateEntities.date
+      if (dateEntities.dateEnd) entities.dateEnd = dateEntities.dateEnd
+    }
+    return { type: 'AVAILABILITY', confidence: 0.9, entities }
+  }
+
+  // "is anyone using [item]?"
+  const anyoneUsing = lower.match(
+    /^is\s+(?:anyone|someone|somebody)\s+(?:using|borrowing)\s+(?:the\s+)?(.+?)\??$/
+  )
+  if (anyoneUsing) {
+    return {
+      type: 'AVAILABILITY',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(anyoneUsing[1]) },
+    }
+  }
+
+  // "when is [item] available/free?"
+  const whenAvail = lower.match(
+    /^when\s+is\s+(?:the\s+)?(.+?)\s+(?:available|free)\??$/
+  )
+  if (whenAvail) {
+    return {
+      type: 'AVAILABILITY',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(whenAvail[1]) },
+    }
   }
 
   return null

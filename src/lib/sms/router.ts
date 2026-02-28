@@ -8,6 +8,7 @@ import { handleReturn } from '@/lib/sms/handlers/return'
 import { handleStatus } from '@/lib/sms/handlers/status'
 import { handleReserve } from '@/lib/sms/handlers/reserve'
 import { handleCancel } from '@/lib/sms/handlers/cancel'
+import { handleAvailability } from '@/lib/sms/handlers/availability'
 
 interface SmsContext {
   userId: string
@@ -111,6 +112,11 @@ export async function routeIntent(
         return await handleReserve(intent, {
           userId: context.userId,
           shopId: shopId!,
+        })
+
+      case 'AVAILABILITY':
+        return await handleAvailability(intent, {
+          userId: context.userId,
         })
 
       case 'CANCEL':

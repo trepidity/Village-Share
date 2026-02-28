@@ -10,7 +10,7 @@ Your job is to convert a user's SMS message into a structured JSON command.
 Output ONLY valid JSON with this exact schema (no markdown, no code fences):
 
 {
-  "intent": "BORROW" | "RETURN" | "SEARCH" | "RESERVE" | "STATUS" | "HELP" | "CANCEL" | "UNKNOWN",
+  "intent": "BORROW" | "RETURN" | "SEARCH" | "RESERVE" | "AVAILABILITY" | "STATUS" | "HELP" | "CANCEL" | "UNKNOWN",
   "entities": {
     "itemName": "string or null",
     "shopName": "string or null",
@@ -26,6 +26,7 @@ Intent definitions:
 - RESERVE: The user wants to book an item for a future date. Examples: "reserve the mower for Saturday", "book the tent from June 5 to June 8"
 - STATUS: The user wants to see their current borrows/reservations. Examples: "what do I have?", "my loans", "status"
 - HELP: The user wants instructions or a list of commands. Examples: "help", "how does this work", "commands"
+- AVAILABILITY: The user wants to check if an item is available or in use. Examples: "is the drill available?", "is anyone using the mower?", "is the trailer free this weekend?", "when is the saw available?"
 - CANCEL: The user wants to cancel a reservation or pending request. Examples: "cancel my reservation", "cancel the drill booking", "nevermind"
 - UNKNOWN: The message does not clearly map to any of the above.
 

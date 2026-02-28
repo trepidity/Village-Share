@@ -6,6 +6,7 @@ export type IntentType =
   | 'STATUS'
   | 'HELP'
   | 'CANCEL'
+  | 'AVAILABILITY'
   | 'UNKNOWN'
 
 export interface ParsedIntent {

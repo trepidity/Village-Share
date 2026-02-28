@@ -84,6 +84,48 @@ export const templates = {
   reserveConflict: (itemName: string) =>
     `Sorry, the ${itemName} is already reserved for that date. Try a different day or text SEARCH to find alternatives.`,
 
+  availabilityCrossShop: (
+    itemName: string,
+    results: Array<{ shopName: string; status: string; detail?: string }>
+  ) => {
+    const header = `${itemName} availability:`
+    const lines = results.slice(0, 6).map((r) => {
+      const detail = r.detail ? ` (${r.detail})` : ''
+      return `- ${r.shopName}: ${r.status}${detail}`
+    })
+    return [header, ...lines].join('\n')
+  },
+
+  availabilityFree: (itemName: string, shopName?: string) =>
+    shopName
+      ? `The ${itemName} is available at ${shopName}! Text BORROW ${itemName} from ${shopName} to check it out.`
+      : `The ${itemName} is available! Text BORROW ${itemName} to check it out.`,
+
+  availabilityBusy: (itemName: string, dueBack?: string) =>
+    dueBack
+      ? `The ${itemName} is currently borrowed (due back ${dueBack}).`
+      : `The ${itemName} is currently borrowed.`,
+
+  availabilitySchedule: (
+    itemName: string,
+    schedule: Array<{ type: string; dates: string }>
+  ) => {
+    const header = `Schedule for ${itemName}:`
+    const lines = schedule
+      .slice(0, 5)
+      .map((s) => `- ${s.type}: ${s.dates}`)
+    return [header, ...lines].join('\n')
+  },
+
+  availabilityDateFree: (itemName: string, dateRange: string) =>
+    `The ${itemName} is free ${dateRange}! Text RESERVE ${itemName} for ${dateRange} to book it.`,
+
+  availabilityDateConflict: (itemName: string, conflictDates: string) =>
+    `The ${itemName} is reserved ${conflictDates}. Try different dates or text SEARCH for alternatives.`,
+
+  availabilityNone: (itemName: string) =>
+    `I couldn't find "${itemName}" in any of your shops. Text SEARCH to see what's available.`,
+
   noActiveShop: () =>
     "You're not connected to a shop yet. Ask a shop owner for an invite, or visit the app to create your own.",
 

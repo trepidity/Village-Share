@@ -169,6 +169,68 @@ describe('SMS Parser', () => {
     })
   })
 
+  describe('AVAILABILITY intent', () => {
+    it('matches "is the drill available?"', () => {
+      const result = parseMessage('is the drill available?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('drill')
+    })
+
+    it('matches "is the trailer in use?"', () => {
+      const result = parseMessage('is the trailer in use?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('trailer')
+    })
+
+    it('matches "is the mower free?"', () => {
+      const result = parseMessage('is the mower free?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('mower')
+    })
+
+    it('matches "is anyone using the drill?"', () => {
+      const result = parseMessage('is anyone using the drill?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('drill')
+    })
+
+    it('matches "is the saw being used?"', () => {
+      const result = parseMessage('is the saw being used?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('saw')
+    })
+
+    it('matches "when is the trailer available?"', () => {
+      const result = parseMessage('when is the trailer available?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('trailer')
+    })
+
+    it('matches "when is the drill free?"', () => {
+      const result = parseMessage('when is the drill free?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('drill')
+    })
+
+    it('matches "check trailer availability"', () => {
+      const result = parseMessage('check trailer availability')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('trailer')
+    })
+
+    it('matches multi-word item "is the table saw available?"', () => {
+      const result = parseMessage('is the table saw available?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('table saw')
+    })
+
+    it('matches "is someone borrowing the ladder?"', () => {
+      const result = parseMessage('is someone borrowing the ladder?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('ladder')
+    })
+  })
+
   describe('Disambiguation (number choices)', () => {
     it('treats bare "1" as a choice', () => {
       const result = parseMessage('1')
