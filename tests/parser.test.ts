@@ -99,6 +99,49 @@ describe('SMS Parser', () => {
       expect(result.type).toBe('RETURN')
       expect(result.entities.itemName).toBe('hammer')
     })
+
+    it('extracts locationName from "return the drill at carson\'s"', () => {
+      const result = parseMessage("return the drill at carson's")
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.locationName).toBe('carson')
+    })
+
+    it('extracts locationName from "return the drill, left it at mike\'s"', () => {
+      const result = parseMessage("return the drill, left it at mike's")
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.locationName).toBe('mike')
+    })
+
+    it('extracts locationName from "drop off the drill at carson\'s"', () => {
+      const result = parseMessage("drop off the drill at carson's")
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.locationName).toBe('carson')
+    })
+
+    it('extracts locationName from "bring back the saw, it\'s at mike\'s"', () => {
+      const result = parseMessage("bring back the saw, it's at mike's")
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('saw')
+      expect(result.entities.locationName).toBe('mike')
+    })
+
+    it('extracts both shopName and locationName from "return drill to daniel at carson\'s"', () => {
+      const result = parseMessage("return drill to daniel at carson's")
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.shopName).toBe('daniel')
+      expect(result.entities.locationName).toBe('carson')
+    })
+
+    it('does not set locationName when not present', () => {
+      const result = parseMessage('return the drill')
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.locationName).toBeUndefined()
+    })
   })
 
   describe('SEARCH intent', () => {

@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { templates } from '@/lib/sms/templates'
+import { resolveShopByName } from '@/lib/sms/utils/resolve-shop'
 import type { ParsedIntent } from '@/lib/sms/intents'
 
 interface ReturnContext {
@@ -59,12 +60,34 @@ export async function handleReturn(
       shop_id: string
     }
 
+    // Resolve return location
+    let locationShopId = matchingBorrow.from_shop_id // default: back to origin
+    let locationShopName: string | undefined
+
+    if (intent.entities.locationName) {
+      const resolvedLocationId = await resolveShopByName(
+        context.userId,
+        intent.entities.locationName
+      )
+      if (resolvedLocationId) {
+        locationShopId = resolvedLocationId
+        // Get the location shop name for confirmation
+        const { data: locationShop } = await supabase
+          .from('shops')
+          .select('name')
+          .eq('id', resolvedLocationId)
+          .single()
+        locationShopName = locationShop?.name
+      }
+    }
+
     // Update borrow record
     const { error: updateBorrowError } = await supabase
       .from('borrows')
       .update({
         status: 'returned',
         returned_at: new Date().toISOString(),
+        return_shop_id: locationShopId,
       })
       .eq('id', matchingBorrow.id)
 
@@ -73,10 +96,10 @@ export async function handleReturn(
       return templates.error()
     }
 
-    // Update item status back to available
+    // Update item status back to available and set physical location
     const { error: updateItemError } = await supabase
       .from('items')
-      .update({ status: 'available' })
+      .update({ status: 'available', location_shop_id: locationShopId })
       .eq('id', matchedItem.id)
 
     if (updateItemError) {
@@ -103,14 +126,17 @@ export async function handleReturn(
 
     // Queue notification to shop owner
     if (shop?.owner_id && shop.owner_id !== context.userId) {
+      const locationNote = locationShopName
+        ? ` It's at ${locationShopName}.`
+        : ''
       await supabase.from('notifications').insert({
         user_id: shop.owner_id,
-        body: `${returnerName} returned "${matchedItem.name}" to ${shop?.name ?? 'your shop'}.`,
+        body: `${returnerName} returned "${matchedItem.name}" to ${shop?.name ?? 'your shop'}.${locationNote}`,
         channel: 'sms',
       })
     }
 
-    return templates.returnConfirm(matchedItem.name)
+    return templates.returnConfirm(matchedItem.name, locationShopName)
   } catch (err) {
     console.error('Return handler error:', err)
     return templates.error()

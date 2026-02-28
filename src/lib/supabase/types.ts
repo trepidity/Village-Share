@@ -152,6 +152,7 @@ export interface Database {
         Row: {
           id: string
           shop_id: string
+          location_shop_id: string
           name: string
           description: string | null
           category: string | null
@@ -163,6 +164,7 @@ export interface Database {
         Insert: {
           id?: string
           shop_id: string
+          location_shop_id?: string
           name: string
           description?: string | null
           category?: string | null
@@ -171,6 +173,7 @@ export interface Database {
         }
         Update: {
           name?: string
+          location_shop_id?: string
           description?: string | null
           category?: string | null
           photo_url?: string | null
@@ -180,6 +183,13 @@ export interface Database {
           {
             foreignKeyName: "items_shop_id_fkey"
             columns: ["shop_id"]
+            isOneToOne: false
+            referencedRelation: "shops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "items_location_shop_id_fkey"
+            columns: ["location_shop_id"]
             isOneToOne: false
             referencedRelation: "shops"
             referencedColumns: ["id"]

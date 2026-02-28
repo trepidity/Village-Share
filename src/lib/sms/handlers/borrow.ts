@@ -27,7 +27,7 @@ export async function handleBorrow(
     // Fuzzy match items in the shop
     const { data: items, error: searchError } = await supabase
       .from('items')
-      .select('id, name, status, shop_id')
+      .select('id, name, status, shop_id, location_shop_id')
       .eq('shop_id', context.shopId)
       .ilike('name', `%${itemName}%`)
 
@@ -112,7 +112,18 @@ export async function handleBorrow(
       })
     }
 
-    return templates.borrowConfirm(item.name, shop?.name ?? 'the shop')
+    // Check if item is at a different location than its home shop
+    let pickupLocation: string | undefined
+    if (item.location_shop_id && item.location_shop_id !== item.shop_id) {
+      const { data: locationShop } = await supabase
+        .from('shops')
+        .select('name')
+        .eq('id', item.location_shop_id)
+        .single()
+      pickupLocation = locationShop?.name
+    }
+
+    return templates.borrowConfirm(item.name, shop?.name ?? 'the shop', pickupLocation)
   } catch (err) {
     console.error('Borrow handler error:', err)
     return templates.error()

@@ -50,7 +50,7 @@ export async function handleAvailability(
     // Search for items across all shops
     const { data: items, error: searchError } = await supabase
       .from('items')
-      .select('id, name, status, shop_id')
+      .select('id, name, status, shop_id, location_shop_id')
       .in('shop_id', shopIds)
       .ilike('name', `%${itemName}%`)
 
@@ -63,11 +63,30 @@ export async function handleAvailability(
       return templates.availabilityNone(itemName)
     }
 
+    // Build a map of location shop names for items not at their home shop
+    const locationShopIds = items
+      .filter((i) => i.location_shop_id && i.location_shop_id !== i.shop_id)
+      .map((i) => i.location_shop_id!)
+    const locationShopMap = new Map<string, string>()
+    if (locationShopIds.length > 0) {
+      const { data: locationShops } = await supabase
+        .from('shops')
+        .select('id, name')
+        .in('id', locationShopIds)
+      for (const ls of locationShops ?? []) {
+        locationShopMap.set(ls.id, ls.name)
+      }
+    }
+
     // Single item in a single shop — use detailed single-item response
     if (items.length === 1) {
       const item = items[0]
       const shopName = shopMap.get(item.shop_id) ?? 'your shop'
-      return await singleItemAvailability(supabase, item, shopName, intent)
+      const locationName =
+        item.location_shop_id && item.location_shop_id !== item.shop_id
+          ? locationShopMap.get(item.location_shop_id)
+          : undefined
+      return await singleItemAvailability(supabase, item, shopName, intent, locationName)
     }
 
     // Multiple results — build a cross-shop summary
@@ -75,6 +94,10 @@ export async function handleAvailability(
 
     for (const item of items) {
       const shopName = shopMap.get(item.shop_id) ?? 'Unknown shop'
+      const locationName =
+        item.location_shop_id && item.location_shop_id !== item.shop_id
+          ? locationShopMap.get(item.location_shop_id)
+          : undefined
 
       if (item.status !== 'available') {
         // Check for active borrow with due date
@@ -96,10 +119,13 @@ export async function handleAvailability(
           detail,
         })
       } else {
+        const locationDetail = locationName
+          ? `at ${locationName}, text BORROW ${item.name} from ${shopName}`
+          : `text BORROW ${item.name} from ${shopName}`
         results.push({
           shopName,
           status: `${item.name} - Available`,
-          detail: `text BORROW ${item.name} from ${shopName}`,
+          detail: locationDetail,
         })
       }
     }
@@ -119,7 +145,8 @@ async function singleItemAvailability(
   supabase: ReturnType<typeof createAdminClient>,
   item: { id: string; name: string; status: string; shop_id: string },
   shopName: string,
-  intent: ParsedIntent
+  intent: ParsedIntent,
+  locationName?: string
 ): Promise<string> {
   // Query active borrows
   const { data: activeBorrows } = await supabase
@@ -208,7 +235,7 @@ async function singleItemAvailability(
   // Item is available
   if (upcomingReservations.length > 0) {
     return (
-      templates.availabilityFree(item.name, shopName) +
+      templates.availabilityFree(item.name, shopName, locationName) +
       '\n' +
       templates.availabilitySchedule(
         item.name,
@@ -220,5 +247,5 @@ async function singleItemAvailability(
     )
   }
 
-  return templates.availabilityFree(item.name, shopName)
+  return templates.availabilityFree(item.name, shopName, locationName)
 }

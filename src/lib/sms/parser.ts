@@ -161,21 +161,23 @@ function matchReturn(
   lower: string,
   original: string
 ): Omit<ParsedIntent, 'raw'> | null {
-  const returnPatterns = [
-    /^(?:return|bring back|give back|drop off|i'm done with|im done with|finished with)\s+(?:the\s+)?(.+?)(?:\s+to\s+(.+?)(?:'s?\s+shop)?)?$/,
-  ]
+  // Pattern with both optional "to [shop]" and "at [location]"
+  // e.g. "return drill to daniel at carson's"
+  const fullPattern =
+    /^(?:return|bring back|give back|drop off|i'm done with|im done with|finished with)\s+(?:the\s+)?(.+?)(?:\s+to\s+(.+?)(?:'s?\s+shop)?)?(?:,?\s+(?:left it |it's |its )?at\s+(.+?)(?:'s?(?:\s+(?:shop|place))?)?)?$/
 
-  for (const pattern of returnPatterns) {
-    const match = lower.match(pattern)
-    if (match) {
-      const entities: ParsedIntent['entities'] = {
-        itemName: cleanEntity(match[1]),
-      }
-      if (match[2]) {
-        entities.shopName = cleanEntity(match[2])
-      }
-      return { type: 'RETURN', confidence: 0.8, entities }
+  const match = lower.match(fullPattern)
+  if (match) {
+    const entities: ParsedIntent['entities'] = {
+      itemName: cleanEntity(match[1]),
     }
+    if (match[2]) {
+      entities.shopName = cleanEntity(match[2])
+    }
+    if (match[3]) {
+      entities.locationName = cleanEntity(match[3])
+    }
+    return { type: 'RETURN', confidence: 0.8, entities }
   }
 
   // Exact keyword

@@ -39,14 +39,18 @@ export const templates = {
       ? `No items found matching "${query}". Try SEARCH to see everything available.`
       : 'No items found in this shop right now.',
 
-  borrowConfirm: (itemName: string, shopName: string) =>
-    `Done! You've borrowed the ${itemName} from ${shopName}. Text RETURN ${itemName} when you're done with it.`,
+  borrowConfirm: (itemName: string, shopName: string, pickupLocation?: string) =>
+    pickupLocation
+      ? `Done! You've borrowed the ${itemName} from ${shopName}. Pick it up at ${pickupLocation}. Text RETURN ${itemName} when you're done with it.`
+      : `Done! You've borrowed the ${itemName} from ${shopName}. Text RETURN ${itemName} when you're done with it.`,
 
   borrowRequested: (itemName: string) =>
     `Your request to borrow the ${itemName} has been sent to the shop owner. You'll get a text when it's approved.`,
 
-  returnConfirm: (itemName: string) =>
-    `Got it! The ${itemName} has been marked as returned. Thanks for bringing it back!`,
+  returnConfirm: (itemName: string, locationName?: string) =>
+    locationName
+      ? `Got it! The ${itemName} has been returned. It's at ${locationName}.`
+      : `Got it! The ${itemName} has been marked as returned. Thanks for bringing it back!`,
 
   itemNotFound: (itemName: string) =>
     `I couldn't find "${itemName}" in this shop. Text SEARCH to see what's available.`,
@@ -96,10 +100,12 @@ export const templates = {
     return [header, ...lines].join('\n')
   },
 
-  availabilityFree: (itemName: string, shopName?: string) =>
-    shopName
-      ? `The ${itemName} is available at ${shopName}! Text BORROW ${itemName} from ${shopName} to check it out.`
-      : `The ${itemName} is available! Text BORROW ${itemName} to check it out.`,
+  availabilityFree: (itemName: string, shopName?: string, locationName?: string) =>
+    locationName
+      ? `The ${itemName} is available! It's at ${locationName} (belongs to ${shopName}). Text BORROW ${itemName} to check it out.`
+      : shopName
+        ? `The ${itemName} is available at ${shopName}! Text BORROW ${itemName} from ${shopName} to check it out.`
+        : `The ${itemName} is available! Text BORROW ${itemName} to check it out.`,
 
   availabilityBusy: (itemName: string, dueBack?: string) =>
     dueBack

@@ -15,6 +15,7 @@ export interface ParsedIntent {
   entities: {
     itemName?: string
     shopName?: string
+    locationName?: string // Physical location ("at [shop]") for returns
     date?: string // ISO date string
     dateEnd?: string // ISO date string for range end
     quantity?: number

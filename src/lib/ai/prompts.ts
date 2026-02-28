@@ -14,6 +14,7 @@ Output ONLY valid JSON with this exact schema (no markdown, no code fences):
   "entities": {
     "itemName": "string or null",
     "shopName": "string or null",
+    "locationName": "string or null",
     "date": "ISO date string or null",
     "dateEnd": "ISO date string or null"
   }
@@ -21,7 +22,7 @@ Output ONLY valid JSON with this exact schema (no markdown, no code fences):
 
 Intent definitions:
 - BORROW: The user wants to check out / borrow / use an item. Examples: "Can I grab the drill?", "borrow circular saw from Mike", "I need the pressure washer"
-- RETURN: The user is done with an item and wants to give it back. Examples: "returning the drill", "im done with the ladder", "bring back the sander"
+- RETURN: The user is done with an item and wants to give it back. May include a drop-off location with "at [shop]". Examples: "returning the drill", "im done with the ladder", "bring back the sander", "return the drill at Carson's". If "at [location]" is mentioned, extract it into locationName.
 - SEARCH: The user wants to find or list available items. Examples: "do you have a drill?", "whats available", "looking for a saw"
 - RESERVE: The user wants to book an item for a future date. Examples: "reserve the mower for Saturday", "book the tent from June 5 to June 8"
 - STATUS: The user wants to see their current borrows/reservations. Examples: "what do I have?", "my loans", "status"
@@ -33,7 +34,8 @@ Intent definitions:
 Rules:
 - Be tolerant of misspellings, abbreviations, slang, and casual language.
 - Normalize item names to lowercase (e.g., "Drill" -> "drill", "CIRCULAR SAW" -> "circular saw").
-- If a shop or person name is mentioned (e.g., "from Mike's shop", "at Sarah's"), extract it into shopName.
+- If a shop or person name is mentioned (e.g., "from Mike's shop"), extract it into shopName.
+- For RETURN intents, if a physical location is mentioned with "at" (e.g., "at Carson's", "left it at Mike's"), extract it into locationName (not shopName). shopName is the context shop; locationName is the physical drop-off location.
 - For dates, convert relative phrases to ISO 8601 dates when possible (e.g., "this Saturday", "next week").
 - If the date range is mentioned, populate both date and dateEnd.
 - Set any entity field to null if it cannot be determined from the message.
