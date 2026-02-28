@@ -39,6 +39,41 @@ describe('SMS Parser', () => {
       expect(result.entities.itemName).toBeTruthy()
     })
 
+    it('extracts shop name from possessive "borrow daniel\'s drill"', () => {
+      const result = parseMessage("borrow daniel's drill")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.shopName).toBe('daniel')
+    })
+
+    it('extracts shop name from possessive "can i get mike\'s chainsaw"', () => {
+      const result = parseMessage("can i get mike's chainsaw")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('chainsaw')
+      expect(result.entities.shopName).toBe('mike')
+    })
+
+    it('extracts multi-word item from possessive "borrow sarah\'s table saw"', () => {
+      const result = parseMessage("borrow sarah's table saw")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('table saw')
+      expect(result.entities.shopName).toBe('sarah')
+    })
+
+    it('handles loose possessive "i want daniel\'s drill"', () => {
+      const result = parseMessage("i want daniel's drill")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.shopName).toBe('daniel')
+    })
+
+    it('handles loose possessive "i want to borrow daniel\'s drill"', () => {
+      const result = parseMessage("i want to borrow daniel's drill")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.shopName).toBe('daniel')
+    })
+
     it('matches "checkout the table saw"', () => {
       const result = parseMessage('checkout the table saw')
       expect(result.type).toBe('BORROW')

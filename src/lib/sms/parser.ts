@@ -64,6 +64,23 @@ export function parseMessage(message: string): ParsedIntent {
     return { ...searchResult, raw }
   }
 
+  // --- Fallback: loose possessive borrow ---
+  // "i want daniel's drill", "i need mike's saw"
+  const loosePossessive = lower.match(
+    /(?:i need|can i (?:get|use|have)|i'd like|i want)\s+(?:to\s+(?:borrow|get|use|have)\s+)?(\w+)'s\s+(.+?)$/
+  )
+  if (loosePossessive) {
+    return {
+      type: 'BORROW',
+      confidence: 0.5,
+      entities: {
+        shopName: cleanEntity(loosePossessive[1]),
+        itemName: cleanEntity(loosePossessive[2]),
+      },
+      raw,
+    }
+  }
+
   // --- Fallback: loose borrow match ---
   // "the drill" or just an item-sounding phrase with "I need" / "can I get"
   const looseBorrow = lower.match(
@@ -195,6 +212,28 @@ function matchBorrow(
   lower: string,
   _original: string
 ): Omit<ParsedIntent, 'raw'> | null {
+  // Possessive form: "borrow daniel's drill", "can i get mike's chainsaw"
+  // Uses \w+ (single word) before 's to avoid matching article+noun like "the painter's tape"
+  const possessivePatterns = [
+    /^(?:borrow|checkout|check out|rent|grab|pick up)\s+(\w+)'s\s+(.+?)$/,
+    /^(?:can i|could i|may i)\s+(?:borrow|get|use|have|rent)\s+(\w+)'s\s+(.+?)\??$/,
+  ]
+
+  for (const pattern of possessivePatterns) {
+    const match = lower.match(pattern)
+    if (match) {
+      return {
+        type: 'BORROW',
+        confidence: 0.8,
+        entities: {
+          shopName: cleanEntity(match[1]),
+          itemName: cleanEntity(match[2]),
+        },
+      }
+    }
+  }
+
+  // "from" form: "borrow the drill from daniel"
   const borrowPatterns = [
     /^(?:borrow|checkout|check out|rent|grab|pick up)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?$/,
     /^(?:can i|could i|may i)\s+(?:borrow|get|use|have|rent)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?\??$/,
