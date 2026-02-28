@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
   Card,
@@ -133,7 +134,7 @@ export default async function InvitePage({
           </CardHeader>
           <CardContent className="flex justify-center">
             <Button variant="outline" asChild>
-              <a href="/">Go Home</a>
+              <Link href="/">Go Home</Link>
             </Button>
           </CardContent>
         </Card>
@@ -170,7 +171,7 @@ export default async function InvitePage({
           </CardHeader>
           <CardContent className="flex justify-center">
             <Button variant="outline" asChild>
-              <a href="/">Go Home</a>
+              <Link href="/">Go Home</Link>
             </Button>
           </CardContent>
         </Card>

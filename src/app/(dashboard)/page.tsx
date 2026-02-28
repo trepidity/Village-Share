@@ -45,7 +45,7 @@ export default async function DashboardPage() {
     .filter(Boolean)
 
   // Fetch item counts per shop
-  let itemCounts: Record<string, number> = {}
+  const itemCounts: Record<string, number> = {}
   if (shopIds.length > 0) {
     const { data: items } = await supabase
       .from("items")
@@ -60,7 +60,7 @@ export default async function DashboardPage() {
   }
 
   // Fetch member counts per shop
-  let memberCounts: Record<string, number> = {}
+  const memberCounts: Record<string, number> = {}
   if (shopIds.length > 0) {
     const { data: members } = await supabase
       .from("shop_members")

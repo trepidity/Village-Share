@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { use } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
@@ -91,6 +91,13 @@ export default function SettingsPage({
   const form = useForm<ShopFormValues>({
     resolver: zodResolver(shopSchema),
     defaultValues: { short_name: "", name: "", description: "" },
+    values: shop
+      ? {
+          short_name: shop.short_name,
+          name: shop.name,
+          description: shop.description ?? "",
+        }
+      : undefined,
   });
 
   const blackoutForm = useForm<BlackoutFormValues>({
@@ -98,7 +105,7 @@ export default function SettingsPage({
     defaultValues: { starts_at: "", ends_at: "", reason: "" },
   });
 
-  const fetchData = useCallback(async () => {
+  const fetchData = async () => {
     const [{ data: shopData }, { data: blackoutData }] = await Promise.all([
       supabase.from("shops").select("*").eq("id", shopId).single(),
       supabase
@@ -111,20 +118,16 @@ export default function SettingsPage({
 
     if (shopData) {
       setShop(shopData);
-      form.reset({
-        short_name: shopData.short_name,
-        name: shopData.name,
-        description: shopData.description ?? "",
-      });
     }
 
     setBlackouts(blackoutData ?? []);
     setLoading(false);
-  }, [shopId, supabase, form]);
+  };
 
   useEffect(() => {
     fetchData();
-  }, [fetchData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shopId]);
 
   const onSubmit = async (values: ShopFormValues) => {
     setError("");

@@ -1,6 +1,6 @@
 import nlp from 'compromise'
 import dates from 'compromise-dates'
-import type { ParsedIntent, IntentType } from './intents'
+import type { ParsedIntent } from './intents'
 
 nlp.plugin(dates)
 
@@ -30,7 +30,7 @@ export function parseMessage(message: string): ParsedIntent {
   }
 
   // --- CANCEL ---
-  const cancelResult = matchCancel(lower, text)
+  const cancelResult = matchCancel(lower)
   if (cancelResult) {
     return { ...cancelResult, raw }
   }
@@ -41,31 +41,31 @@ export function parseMessage(message: string): ParsedIntent {
   }
 
   // --- RETURN ---
-  const returnResult = matchReturn(lower, text)
+  const returnResult = matchReturn(lower)
   if (returnResult) {
     return { ...returnResult, raw }
   }
 
   // --- RESERVE ---
-  const reserveResult = matchReserve(lower, text)
+  const reserveResult = matchReserve(lower)
   if (reserveResult) {
     return { ...reserveResult, raw }
   }
 
   // --- BORROW ---
-  const borrowResult = matchBorrow(lower, text)
+  const borrowResult = matchBorrow(lower)
   if (borrowResult) {
     return { ...borrowResult, raw }
   }
 
   // --- AVAILABILITY ---
-  const availabilityResult = matchAvailability(lower, text)
+  const availabilityResult = matchAvailability(lower)
   if (availabilityResult) {
     return { ...availabilityResult, raw }
   }
 
   // --- SEARCH ---
-  const searchResult = matchSearch(lower, text)
+  const searchResult = matchSearch(lower)
   if (searchResult) {
     return { ...searchResult, raw }
   }
@@ -135,8 +135,7 @@ function matchStatus(lower: string): boolean {
 }
 
 function matchCancel(
-  lower: string,
-  _original: string
+  lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
   const cancelExact = /^cancel(?:\s+(?:my\s+)?reservation)?$/
   if (cancelExact.test(lower)) {
@@ -158,8 +157,7 @@ function matchCancel(
 }
 
 function matchReturn(
-  lower: string,
-  original: string
+  lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
   // Pattern with both optional "to [shop]" and "at [location]"
   // e.g. "return drill to daniel at carson's"
@@ -189,8 +187,7 @@ function matchReturn(
 }
 
 function matchReserve(
-  lower: string,
-  original: string
+  lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
   const reservePattern = lower.match(
     /^(?:reserve|book|schedule|hold)\s+(?:the\s+)?(.+?)(?:\s+(?:for|on|from)\s+(.+))?$/
@@ -217,8 +214,7 @@ function matchReserve(
 }
 
 function matchBorrow(
-  lower: string,
-  _original: string
+  lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
   // Possessive form: "borrow daniel's drill", "can i get mike's chainsaw"
   // Uses \w+ (single word) before 's to avoid matching article+noun like "the painter's tape"
@@ -269,8 +265,7 @@ function matchBorrow(
 }
 
 function matchAvailability(
-  lower: string,
-  original: string
+  lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
   // "check [item] availability"
   const checkAvail = lower.match(
@@ -340,8 +335,7 @@ function matchAvailability(
 }
 
 function matchSearch(
-  lower: string,
-  _original: string
+  lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
   // Exact keywords
   if (

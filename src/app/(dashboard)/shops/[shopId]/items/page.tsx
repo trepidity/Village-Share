@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
 import { use } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -36,13 +35,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   ArrowLeft,
   ImageIcon,
   Loader2,
@@ -51,6 +43,7 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 type Item = Database["public"]["Tables"]["items"]["Row"];
@@ -88,7 +81,6 @@ export default function ItemsPage({
 }) {
   const { shopId } = use(params);
   const supabase = createClient();
-  const router = useRouter();
 
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
@@ -289,10 +281,12 @@ export default function ItemsPage({
           <div className="flex items-center gap-4">
             {photoPreview ? (
               <div className="relative size-20 overflow-hidden rounded-md border">
-                <img
+                <Image
                   src={photoPreview}
                   alt="Preview"
-                  className="size-full object-cover"
+                  fill
+                  unoptimized
+                  className="object-cover"
                 />
               </div>
             ) : (
@@ -407,10 +401,12 @@ export default function ItemsPage({
             <Card key={item.id} className="overflow-hidden">
               <div className="relative aspect-square bg-muted">
                 {item.photo_url ? (
-                  <img
+                  <Image
                     src={item.photo_url}
                     alt={item.name}
-                    className="size-full object-cover"
+                    fill
+                    unoptimized
+                    className="object-cover"
                   />
                 ) : (
                   <div className="flex size-full items-center justify-center">

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,7 +12,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Package,
   Users,
@@ -186,10 +186,12 @@ export default async function ShopDetailPage({
                 <Card key={item.id} className="overflow-hidden">
                   <div className="relative aspect-square bg-muted">
                     {item.photo_url ? (
-                      <img
+                      <Image
                         src={item.photo_url}
                         alt={item.name}
-                        className="size-full object-cover"
+                        fill
+                        unoptimized
+                        className="object-cover"
                       />
                     ) : (
                       <div className="flex size-full items-center justify-center">

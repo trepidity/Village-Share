@@ -11,11 +11,22 @@ import { handleReserve } from '@/lib/sms/handlers/reserve'
 import { handleCancel } from '@/lib/sms/handlers/cancel'
 import { handleAvailability } from '@/lib/sms/handlers/availability'
 
+export interface AwaitingChoice {
+  options?: Array<{ id: string; name: string }>
+  intent_type: string
+  shop_id?: string | null
+  extra_entities?: Record<string, string>
+}
+
+export interface LastIntent {
+  awaiting_choice?: AwaitingChoice
+}
+
 interface SmsContext {
   userId: string
   phone: string
   activeShopId: string | null
-  lastIntent: any // JSON from sms_sessions.last_intent
+  lastIntent: LastIntent | null
 }
 
 /**
@@ -146,7 +157,7 @@ async function resolveDisambiguation(
   choiceIndex: number,
   context: SmsContext
 ): Promise<string> {
-  const { awaiting_choice } = context.lastIntent
+  const awaiting_choice = context.lastIntent!.awaiting_choice!
 
   const options: Array<{ id: string; name: string }> =
     awaiting_choice.options ?? []

@@ -3,7 +3,7 @@ import { validateTwilioSignature } from '@/lib/twilio/validate'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseMessage } from '@/lib/sms/parser'
 import { type ParsedIntent } from '@/lib/sms/intents'
-import { routeIntent } from '@/lib/sms/router'
+import { routeIntent, type LastIntent } from '@/lib/sms/router'
 import { templates } from '@/lib/sms/templates'
 import type { Json } from '@/lib/supabase/types'
 
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       userId: session.user_id,
       phone,
       activeShopId: session.active_shop_id,
-      lastIntent: session.last_intent,
+      lastIntent: session.last_intent as LastIntent | null,
     })
 
     // Build last_intent state for session persistence
