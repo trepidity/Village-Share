@@ -76,6 +76,22 @@ if [ "$MISSING" -eq 1 ]; then
 fi
 ok "All environment variables configured"
 
+# Run Supabase migrations
+info "Applying Supabase migrations to remote database..."
+
+SUPABASE_CMD=""
+if command -v supabase &>/dev/null; then
+  SUPABASE_CMD="supabase"
+elif npx supabase --version &>/dev/null 2>&1; then
+  SUPABASE_CMD="npx supabase"
+else
+  error "Supabase CLI not found. Install: npm i -g supabase"
+  exit 1
+fi
+
+$SUPABASE_CMD db push --linked
+ok "Migrations applied"
+
 # Deploy
 echo ""
 info "Deploying to production..."
