@@ -300,6 +300,18 @@ function matchAvailability(
     return { type: 'AVAILABILITY', confidence: 0.9, entities }
   }
 
+  // "who has [item]?", "who's got [item]?", "who's using [item]?"
+  const whoHas = lower.match(
+    /^who(?:'s|s| is)?\s+(?:has|got|using|borrowing)\s+(?:the\s+|a\s+)?(.+?)\??$/
+  )
+  if (whoHas) {
+    return {
+      type: 'AVAILABILITY',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(whoHas[1]) },
+    }
+  }
+
   // "is anyone using [item]?"
   const anyoneUsing = lower.match(
     /^is\s+(?:anyone|someone|somebody)\s+(?:using|borrowing)\s+(?:the\s+)?(.+?)\??$/
