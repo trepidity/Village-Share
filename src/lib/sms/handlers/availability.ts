@@ -27,7 +27,7 @@ export async function handleAvailability(
     // Get all shops the user belongs to
     const { data: memberships, error: memberError } = await supabase
       .from('shop_members')
-      .select('shop_id, shops!inner(id, name)')
+      .select('shop_id, shops!inner(id, short_name)')
       .eq('user_id', context.userId)
 
     if (memberError) {
@@ -42,8 +42,8 @@ export async function handleAvailability(
     const shopIds = memberships.map((m) => m.shop_id)
     const shopMap = new Map(
       memberships.map((m) => {
-        const shop = m.shops as unknown as { id: string; name: string }
-        return [m.shop_id, shop.name]
+        const shop = m.shops as unknown as { id: string; short_name: string }
+        return [m.shop_id, shop.short_name]
       })
     )
 
@@ -71,10 +71,10 @@ export async function handleAvailability(
     if (locationShopIds.length > 0) {
       const { data: locationShops } = await supabase
         .from('shops')
-        .select('id, name')
+        .select('id, short_name')
         .in('id', locationShopIds)
       for (const ls of locationShops ?? []) {
-        locationShopMap.set(ls.id, ls.name)
+        locationShopMap.set(ls.id, ls.short_name)
       }
     }
 

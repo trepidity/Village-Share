@@ -28,7 +28,8 @@ import { Store, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 const createShopSchema = z.object({
-  name: z.string().min(1, "Shop name is required").max(100, "Name is too long"),
+  short_name: z.string().min(1, "Short name is required").max(12, "Short name must be 12 characters or less"),
+  name: z.string().min(1, "Display name is required").max(100, "Name is too long"),
   description: z.string().max(500, "Description is too long").optional(),
 });
 
@@ -42,6 +43,7 @@ export default function NewShopPage() {
   const form = useForm<CreateShopForm>({
     resolver: zodResolver(createShopSchema),
     defaultValues: {
+      short_name: "",
       name: "",
       description: "",
     },
@@ -62,6 +64,7 @@ export default function NewShopPage() {
       .from("shops")
       .insert({
         name: values.name,
+        short_name: values.short_name,
         description: values.description || null,
         owner_id: user.id,
       })
@@ -114,10 +117,24 @@ export default function NewShopPage() {
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <FormField
                 control={form.control}
+                name="short_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Short Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="ToolLib" maxLength={12} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Shop Name</FormLabel>
+                    <FormLabel>Display Name</FormLabel>
                     <FormControl>
                       <Input placeholder="My Neighborhood Tool Library" {...field} />
                     </FormControl>

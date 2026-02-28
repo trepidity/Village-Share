@@ -195,7 +195,7 @@ async function resolveShop(
 
   const { data: memberships, error } = await supabase
     .from('shop_members')
-    .select('shop_id, shops!inner(id, name)')
+    .select('shop_id, shops!inner(id, short_name)')
     .eq('user_id', userId)
 
   if (error) {
@@ -213,8 +213,8 @@ async function resolveShop(
 
   // Multiple shops - ask user to pick
   const shopNames = memberships.map((m) => {
-    const shop = m.shops as unknown as { id: string; name: string }
-    return shop.name
+    const shop = m.shops as unknown as { id: string; short_name: string }
+    return shop.short_name
   })
 
   return {

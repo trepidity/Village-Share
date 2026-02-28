@@ -20,14 +20,14 @@ export async function handleSearch(
     const supabase = createAdminClient()
     const query = intent.entities.itemName
 
-    // Get the shop name for display
+    // Get the shop short_name for SMS display
     const { data: shop } = await supabase
       .from('shops')
-      .select('name')
+      .select('short_name')
       .eq('id', context.shopId)
       .single()
 
-    const shopName = shop?.name ?? 'your shop'
+    const shopName = shop?.short_name ?? 'your shop'
 
     if (query) {
       // Fuzzy search by item name

@@ -46,6 +46,7 @@ export interface Database {
           id: string
           owner_id: string
           name: string
+          short_name: string
           description: string | null
           is_active: boolean
           created_at: string
@@ -55,11 +56,13 @@ export interface Database {
           id?: string
           owner_id: string
           name: string
+          short_name?: string
           description?: string | null
           is_active?: boolean
         }
         Update: {
           name?: string
+          short_name?: string
           description?: string | null
           is_active?: boolean
         }

@@ -71,13 +71,13 @@ export async function handleReturn(
       )
       if (resolvedLocationId) {
         locationShopId = resolvedLocationId
-        // Get the location shop name for confirmation
+        // Get the location shop short_name for SMS confirmation
         const { data: locationShop } = await supabase
           .from('shops')
-          .select('name')
+          .select('short_name')
           .eq('id', resolvedLocationId)
           .single()
-        locationShopName = locationShop?.name
+        locationShopName = locationShop?.short_name
       }
     }
 
@@ -110,7 +110,7 @@ export async function handleReturn(
     // Get shop info for notification
     const { data: shop } = await supabase
       .from('shops')
-      .select('name, owner_id')
+      .select('short_name, owner_id')
       .eq('id', context.shopId)
       .single()
 
@@ -131,7 +131,7 @@ export async function handleReturn(
         : ''
       await supabase.from('notifications').insert({
         user_id: shop.owner_id,
-        body: `${returnerName} returned "${matchedItem.name}" to ${shop?.name ?? 'your shop'}.${locationNote}`,
+        body: `${returnerName} returned "${matchedItem.name}" to ${shop?.short_name ?? 'your shop'}.${locationNote}`,
         channel: 'sms',
       })
     }

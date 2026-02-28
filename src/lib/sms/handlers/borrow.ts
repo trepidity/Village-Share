@@ -89,7 +89,7 @@ export async function handleBorrow(
     // Get shop info for confirmation and notification
     const { data: shop } = await supabase
       .from('shops')
-      .select('name, owner_id')
+      .select('short_name, owner_id')
       .eq('id', context.shopId)
       .single()
 
@@ -107,7 +107,7 @@ export async function handleBorrow(
     if (shop?.owner_id && shop.owner_id !== context.userId) {
       await supabase.from('notifications').insert({
         user_id: shop.owner_id,
-        body: `${borrowerName} borrowed "${item.name}" from ${shop.name}.`,
+        body: `${borrowerName} borrowed "${item.name}" from ${shop.short_name}.`,
         channel: 'sms',
       })
     }
@@ -117,13 +117,13 @@ export async function handleBorrow(
     if (item.location_shop_id && item.location_shop_id !== item.shop_id) {
       const { data: locationShop } = await supabase
         .from('shops')
-        .select('name')
+        .select('short_name')
         .eq('id', item.location_shop_id)
         .single()
-      pickupLocation = locationShop?.name
+      pickupLocation = locationShop?.short_name
     }
 
-    return templates.borrowConfirm(item.name, shop?.name ?? 'the shop', pickupLocation)
+    return templates.borrowConfirm(item.name, shop?.short_name ?? 'the shop', pickupLocation)
   } catch (err) {
     console.error('Borrow handler error:', err)
     return templates.error()

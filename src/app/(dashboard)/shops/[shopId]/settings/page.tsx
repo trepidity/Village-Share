@@ -51,6 +51,7 @@ type Shop = Database["public"]["Tables"]["shops"]["Row"];
 type BlackoutPeriod = Database["public"]["Tables"]["blackout_periods"]["Row"];
 
 const shopSchema = z.object({
+  short_name: z.string().min(1, "Short name is required").max(12, "Short name must be 12 characters or less"),
   name: z.string().min(1, "Shop name is required").max(100),
   description: z.string().max(500).optional(),
 });
@@ -89,7 +90,7 @@ export default function SettingsPage({
 
   const form = useForm<ShopFormValues>({
     resolver: zodResolver(shopSchema),
-    defaultValues: { name: "", description: "" },
+    defaultValues: { short_name: "", name: "", description: "" },
   });
 
   const blackoutForm = useForm<BlackoutFormValues>({
@@ -111,6 +112,7 @@ export default function SettingsPage({
     if (shopData) {
       setShop(shopData);
       form.reset({
+        short_name: shopData.short_name,
         name: shopData.name,
         description: shopData.description ?? "",
       });
@@ -132,6 +134,7 @@ export default function SettingsPage({
     const { error: updateError } = await supabase
       .from("shops")
       .update({
+        short_name: values.short_name,
         name: values.name,
         description: values.description || null,
       })
@@ -266,10 +269,24 @@ export default function SettingsPage({
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField
                 control={form.control}
+                name="short_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Short Name</FormLabel>
+                    <FormControl>
+                      <Input maxLength={12} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Shop Name</FormLabel>
+                    <FormLabel>Display Name</FormLabel>
                     <FormControl>
                       <Input {...field} />
                     </FormControl>
