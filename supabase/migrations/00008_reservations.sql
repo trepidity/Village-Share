@@ -2,7 +2,7 @@
 create type public.reservation_status as enum ('pending', 'confirmed', 'cancelled', 'fulfilled');
 
 create table public.reservations (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   item_id uuid not null references public.items(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
   starts_at timestamptz not null,

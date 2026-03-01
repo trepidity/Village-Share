@@ -3,7 +3,7 @@ create type public.notification_channel as enum ('sms');
 create type public.notification_status as enum ('pending', 'sent', 'failed');
 
 create table public.notifications (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   user_id uuid not null references public.profiles(id) on delete cascade,
   channel public.notification_channel not null default 'sms',
   status public.notification_status not null default 'pending',

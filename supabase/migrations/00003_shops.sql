@@ -1,6 +1,6 @@
 -- Shops table
-create table public.shops (
-  id uuid primary key default uuid_generate_v4(),
+create table if not exists public.shops (
+  id uuid primary key default gen_random_uuid(),
   owner_id uuid not null references public.profiles(id) on delete cascade,
   name text not null,
   description text,
@@ -9,26 +9,13 @@ create table public.shops (
   updated_at timestamptz not null default now()
 );
 
+drop trigger if exists shops_updated_at on public.shops;
 create trigger shops_updated_at
   before update on public.shops
   for each row execute function public.set_updated_at();
 
 -- RLS
 alter table public.shops enable row level security;
-
-create policy "Anyone can view active shops they are a member of"
-  on public.shops for select
-  using (
-    is_active = true
-    and (
-      owner_id = auth.uid()
-      or exists (
-        select 1 from public.shop_members
-        where shop_members.shop_id = shops.id
-        and shop_members.user_id = auth.uid()
-      )
-    )
-  );
 
 create policy "Authenticated users can create shops"
   on public.shops for insert

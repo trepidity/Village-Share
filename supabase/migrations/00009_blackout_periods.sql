@@ -1,6 +1,6 @@
 -- Blackout periods table
 create table public.blackout_periods (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   shop_id uuid not null references public.shops(id) on delete cascade,
   item_id uuid references public.items(id) on delete cascade,
   starts_at timestamptz not null,

@@ -1,10 +1,13 @@
+-- Enable pgcrypto for gen_random_bytes
+create extension if not exists "pgcrypto" with schema "extensions";
+
 -- Shop invites table
 create table public.shop_invites (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   shop_id uuid not null references public.shops(id) on delete cascade,
   invited_by uuid not null references public.profiles(id) on delete cascade,
   phone text,
-  token text unique not null default encode(gen_random_bytes(16), 'hex'),
+  token text unique not null default encode(extensions.gen_random_bytes(16), 'hex'),
   role public.shop_role not null default 'member',
   accepted_at timestamptz,
   expires_at timestamptz not null default (now() + interval '7 days'),

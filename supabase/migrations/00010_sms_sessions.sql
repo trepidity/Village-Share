@@ -1,6 +1,6 @@
 -- SMS sessions table
 create table public.sms_sessions (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   phone text unique not null,
   user_id uuid not null references public.profiles(id) on delete cascade,
   active_shop_id uuid references public.shops(id) on delete set null,

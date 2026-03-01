@@ -2,7 +2,7 @@
 create type public.borrow_status as enum ('requested', 'active', 'returned', 'cancelled');
 
 create table public.borrows (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   item_id uuid not null references public.items(id) on delete cascade,
   borrower_id uuid not null references public.profiles(id) on delete cascade,
   from_shop_id uuid not null references public.shops(id) on delete cascade,

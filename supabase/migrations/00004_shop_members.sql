@@ -2,7 +2,7 @@
 create type public.shop_role as enum ('owner', 'admin', 'member');
 
 create table public.shop_members (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid primary key default gen_random_uuid(),
   shop_id uuid not null references public.shops(id) on delete cascade,
   user_id uuid not null references public.profiles(id) on delete cascade,
   role public.shop_role not null default 'member',
@@ -69,4 +69,19 @@ create policy "Shop owners/admins can remove members"
       and sm.role in ('owner', 'admin')
     )
     or user_id = auth.uid()
+  );
+
+-- Shops select policy (depends on shop_members existing)
+create policy "Anyone can view active shops they are a member of"
+  on public.shops for select
+  using (
+    is_active = true
+    and (
+      owner_id = auth.uid()
+      or exists (
+        select 1 from public.shop_members
+        where shop_members.shop_id = shops.id
+        and shop_members.user_id = auth.uid()
+      )
+    )
   );
