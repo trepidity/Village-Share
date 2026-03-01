@@ -1,10 +1,19 @@
 "use client";
 
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { normalizePhone } from "@/lib/utils/phone";
 
 export default function LoginPage() {
+  const [phone, setPhone] = useState("");
+  const [otp, setOtp] = useState("");
+  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
   const signInWithGoogle = async () => {
     const supabase = createClient();
     await supabase.auth.signInWithOAuth({
@@ -13,6 +22,54 @@ export default function LoginPage() {
         redirectTo: `${window.location.origin}/callback`,
       },
     });
+  };
+
+  const sendOtp = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const normalized = normalizePhone(phone);
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOtp({ phone: normalized });
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      setStep("otp");
+    } catch {
+      setError("Failed to send code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const normalized = normalizePhone(phone);
+      const supabase = createClient();
+      const { error } = await supabase.auth.verifyOtp({
+        phone: normalized,
+        token: otp,
+        type: "sms",
+      });
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      // Mark profile as phone-verified and create SMS session
+      await fetch("/api/auth/phone-setup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: normalized }),
+      });
+      window.location.href = "/";
+    } catch {
+      setError("Verification failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -50,6 +107,68 @@ export default function LoginPage() {
             </svg>
             Continue with Google
           </Button>
+
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-card px-2 text-muted-foreground">or</span>
+            </div>
+          </div>
+
+          {step === "phone" ? (
+            <div className="space-y-2">
+              <Input
+                type="tel"
+                placeholder="Phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+              />
+              <Button
+                className="w-full"
+                onClick={sendOtp}
+                disabled={loading || !phone.trim()}
+              >
+                {loading ? "Sending..." : "Send Code"}
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground text-center">
+                Enter the code sent to {phone}
+              </p>
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="6-digit code"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+              />
+              <Button
+                className="w-full"
+                onClick={verifyOtp}
+                disabled={loading || !otp.trim()}
+              >
+                {loading ? "Verifying..." : "Verify"}
+              </Button>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => {
+                  setStep("phone");
+                  setOtp("");
+                  setError("");
+                }}
+              >
+                Use a different number
+              </Button>
+            </div>
+          )}
+
+          {error && (
+            <p className="text-sm text-destructive text-center">{error}</p>
+          )}
         </CardContent>
       </Card>
     </div>
