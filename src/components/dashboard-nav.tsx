@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import {
@@ -69,6 +69,9 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
   const pathname = usePathname()
   const router = useRouter()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => setMounted(true), [])
 
   const displayName = profile?.display_name || user.email || "User"
   const initials = getInitials(profile?.display_name ?? null, user.email)
@@ -133,34 +136,53 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
 
           {/* User section at bottom */}
           <div className="border-t p-3">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors">
-                  <Avatar size="sm">
-                    {profile?.avatar_url && (
-                      <AvatarImage src={profile.avatar_url} alt={displayName} />
-                    )}
-                    <AvatarFallback>{initials}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 text-left min-w-0">
-                    <p className="text-sm font-medium truncate">{displayName}</p>
-                    {user.email && (
-                      <p className="text-xs text-muted-foreground truncate">
-                        {user.email}
-                      </p>
-                    )}
-                  </div>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4" />
-                  Sign out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            {mounted ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm hover:bg-accent transition-colors">
+                    <Avatar size="sm">
+                      {profile?.avatar_url && (
+                        <AvatarImage src={profile.avatar_url} alt={displayName} />
+                      )}
+                      <AvatarFallback>{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 text-left min-w-0">
+                      <p className="text-sm font-medium truncate">{displayName}</p>
+                      {user.email && (
+                        <p className="text-xs text-muted-foreground truncate">
+                          {user.email}
+                        </p>
+                      )}
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="h-4 w-4" />
+                    Sign out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <div className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm">
+                <Avatar size="sm">
+                  {profile?.avatar_url && (
+                    <AvatarImage src={profile.avatar_url} alt={displayName} />
+                  )}
+                  <AvatarFallback>{initials}</AvatarFallback>
+                </Avatar>
+                <div className="flex-1 text-left min-w-0">
+                  <p className="text-sm font-medium truncate">{displayName}</p>
+                  {user.email && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      {user.email}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </aside>
@@ -173,26 +195,37 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
         </Link>
 
         <div className="flex items-center gap-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm">
-                <Avatar size="sm">
-                  {profile?.avatar_url && (
-                    <AvatarImage src={profile.avatar_url} alt={displayName} />
-                  )}
-                  <AvatarFallback>{initials}</AvatarFallback>
-                </Avatar>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={handleSignOut}>
-                <LogOut className="h-4 w-4" />
-                Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {mounted ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon-sm">
+                  <Avatar size="sm">
+                    {profile?.avatar_url && (
+                      <AvatarImage src={profile.avatar_url} alt={displayName} />
+                    )}
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuLabel>{displayName}</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="h-4 w-4" />
+                  Sign out
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <Button variant="ghost" size="icon-sm">
+              <Avatar size="sm">
+                {profile?.avatar_url && (
+                  <AvatarImage src={profile.avatar_url} alt={displayName} />
+                )}
+                <AvatarFallback>{initials}</AvatarFallback>
+              </Avatar>
+            </Button>
+          )}
 
           <Button
             variant="ghost"

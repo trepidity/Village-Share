@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef, useState, useEffect, type FormEvent } from "react"
+import { useRef, useState, useEffect, useCallback, type FormEvent } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, Loader2 } from "lucide-react"
@@ -66,6 +66,12 @@ export function ChatPanel() {
     return () => window.visualViewport?.removeEventListener("resize", handleResize)
   }, [])
 
+  // Re-focus input whenever it loses focus (e.g. tapping messages area)
+  const refocusInput = useCallback(() => {
+    // Small delay so any click/tap completes before we grab focus
+    setTimeout(() => inputRef.current?.focus(), 0)
+  }, [])
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
     const text = input.trim()
@@ -126,6 +132,7 @@ export function ChatPanel() {
       <div
         ref={scrollRef}
         className="flex-1 min-h-0 overflow-y-auto space-y-3 py-4 px-1"
+        onClick={refocusInput}
       >
         {messages.map((msg) => (
           <div
@@ -166,6 +173,7 @@ export function ChatPanel() {
           ref={inputRef}
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onBlur={refocusInput}
           placeholder="Type a message..."
           disabled={isLoading}
           autoFocus
