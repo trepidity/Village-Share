@@ -6,7 +6,6 @@ import { useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { useRouter } from "next/navigation"
 import {
-  Home,
   Store,
   BookOpen,
   MessageCircle,
@@ -44,10 +43,9 @@ interface DashboardNavProps {
 }
 
 const navLinks = [
-  { href: "/", label: "Dashboard", icon: Home },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/shops", label: "My Shops", icon: Store },
   { href: "/borrows", label: "My Borrows", icon: BookOpen },
-  { href: "/chat", label: "Chat", icon: MessageCircle },
 ]
 
 function getInitials(name: string | null, email?: string): string {
@@ -80,7 +78,6 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
   }
 
   function isActive(href: string): boolean {
-    if (href === "/") return pathname === "/"
     return pathname.startsWith(href)
   }
 
@@ -91,7 +88,7 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
         <div className="flex flex-col flex-1 min-h-0">
           {/* Logo / Brand */}
           <div className="flex items-center h-16 px-6">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/chat" className="flex items-center gap-2">
               <Store className="h-6 w-6 text-primary" />
               <span className="text-lg font-semibold">VillageShare</span>
             </Link>
