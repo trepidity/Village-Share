@@ -17,7 +17,6 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
-  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -30,6 +29,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Input } from "@/components/ui/input";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Check,
@@ -37,6 +43,7 @@ import {
   Crown,
   Link2,
   Loader2,
+  Mail,
   Shield,
   User,
   UserPlus,
@@ -85,6 +92,9 @@ export default function MembersPage({
   const [creating, setCreating] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   const fetchData = useCallback(async () => {
     const {
@@ -159,6 +169,31 @@ export default function MembersPage({
       setError(err instanceof Error ? err.message : "Failed to create invite");
     } finally {
       setCreating(false);
+    }
+  };
+
+  const sendEmailInvite = async () => {
+    setSendingEmail(true);
+    setError("");
+    setEmailSent(false);
+
+    try {
+      const res = await fetch("/api/invites/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopId, email: inviteEmail, role: inviteRole }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send invite");
+
+      setEmailSent(true);
+      setInviteEmail("");
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send invite");
+    } finally {
+      setSendingEmail(false);
     }
   };
 
@@ -246,7 +281,14 @@ export default function MembersPage({
         <h1 className="flex-1 text-2xl font-bold">Members</h1>
 
         {isOwnerOrAdmin && (
-          <Dialog open={inviteOpen} onOpenChange={setInviteOpen}>
+          <Dialog open={inviteOpen} onOpenChange={(open) => {
+              setInviteOpen(open);
+              if (!open) {
+                setError("");
+                setEmailSent(false);
+                setInviteEmail("");
+              }
+            }}>
             <DialogTrigger asChild>
               <Button>
                 <UserPlus className="size-4" />
@@ -257,12 +299,17 @@ export default function MembersPage({
               <DialogHeader>
                 <DialogTitle>Invite a Member</DialogTitle>
                 <DialogDescription>
-                  Generate an invite link to share with someone. The link will
+                  Send an email invite or generate a link to share. Invites
                   expire in 7 days.
                 </DialogDescription>
               </DialogHeader>
 
               {error && <p className="text-sm text-destructive">{error}</p>}
+              {emailSent && (
+                <p className="text-sm text-green-600">
+                  Invite email sent successfully!
+                </p>
+              )}
 
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -282,12 +329,53 @@ export default function MembersPage({
                 </div>
               </div>
 
-              <DialogFooter>
-                <Button onClick={createInvite} disabled={creating}>
-                  {creating && <Loader2 className="size-4 animate-spin" />}
-                  Generate Invite Link
-                </Button>
-              </DialogFooter>
+              <Tabs defaultValue="email" className="w-full">
+                <TabsList className="w-full">
+                  <TabsTrigger value="email" className="flex-1">
+                    <Mail className="mr-1 size-3.5" />
+                    Send Email
+                  </TabsTrigger>
+                  <TabsTrigger value="link" className="flex-1">
+                    <Link2 className="mr-1 size-3.5" />
+                    Generate Link
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="email" className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Email address</label>
+                    <Input
+                      type="email"
+                      placeholder="name@example.com"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={sendEmailInvite}
+                    disabled={sendingEmail || !inviteEmail}
+                    className="w-full"
+                  >
+                    {sendingEmail && (
+                      <Loader2 className="size-4 animate-spin" />
+                    )}
+                    <Mail className="size-4" />
+                    Send Email Invite
+                  </Button>
+                </TabsContent>
+                <TabsContent value="link">
+                  <Button
+                    onClick={createInvite}
+                    disabled={creating}
+                    className="w-full"
+                  >
+                    {creating && (
+                      <Loader2 className="size-4 animate-spin" />
+                    )}
+                    <Link2 className="size-4" />
+                    Generate Invite Link
+                  </Button>
+                </TabsContent>
+              </Tabs>
             </DialogContent>
           </Dialog>
         )}
@@ -375,7 +463,11 @@ export default function MembersPage({
                 key={invite.id}
                 className="flex items-center gap-3 rounded-lg border p-3"
               >
+                {invite.email ? (
+                <Mail className="size-5 shrink-0 text-muted-foreground" />
+              ) : (
                 <Link2 className="size-5 shrink-0 text-muted-foreground" />
+              )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Badge
@@ -389,9 +481,15 @@ export default function MembersPage({
                       {new Date(invite.expires_at).toLocaleDateString()}
                     </span>
                   </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground font-mono">
-                    /invite/{invite.token.slice(0, 8)}...
-                  </p>
+                  {invite.email ? (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {invite.email}
+                    </p>
+                  ) : (
+                    <p className="mt-1 truncate text-xs text-muted-foreground font-mono">
+                      /invite/{invite.token.slice(0, 8)}...
+                    </p>
+                  )}
                 </div>
                 <div className="flex gap-1">
                   <Button

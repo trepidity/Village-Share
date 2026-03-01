@@ -116,6 +116,7 @@ export interface Database {
           shop_id: string
           invited_by: string
           phone: string | null
+          email: string | null
           token: string
           role: ShopRole
           accepted_at: string | null
@@ -127,6 +128,7 @@ export interface Database {
           shop_id: string
           invited_by: string
           phone?: string | null
+          email?: string | null
           token?: string
           role?: ShopRole
           expires_at?: string
