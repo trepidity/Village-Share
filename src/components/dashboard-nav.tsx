@@ -9,6 +9,7 @@ import {
   Home,
   Store,
   BookOpen,
+  MessageCircle,
   LogOut,
   Plus,
   Menu,
@@ -46,6 +47,7 @@ const navLinks = [
   { href: "/", label: "Dashboard", icon: Home },
   { href: "/shops", label: "My Shops", icon: Store },
   { href: "/borrows", label: "My Borrows", icon: BookOpen },
+  { href: "/chat", label: "Chat", icon: MessageCircle },
 ]
 
 function getInitials(name: string | null, email?: string): string {
