@@ -122,7 +122,6 @@ export function ChatPanel() {
       ])
     } finally {
       setIsLoading(false)
-      inputRef.current?.focus()
     }
   }
 
@@ -175,7 +174,7 @@ export function ChatPanel() {
           onChange={(e) => setInput(e.target.value)}
           onBlur={refocusInput}
           placeholder="Type a message..."
-          disabled={isLoading}
+          readOnly={isLoading}
           autoFocus
         />
         <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
