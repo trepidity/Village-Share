@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type ShopRole = 'owner' | 'admin' | 'member'
+export type VillageRole = 'owner' | 'admin' | 'member'
 export type ItemStatus = 'available' | 'borrowed' | 'unavailable'
 export type BorrowStatus = 'requested' | 'active' | 'returned' | 'cancelled'
 export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'fulfilled'
@@ -41,10 +41,113 @@ export interface Database {
         }
         Relationships: []
       }
+      villages: {
+        Row: {
+          id: string
+          name: string
+          description: string | null
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string | null
+          created_by: string
+        }
+        Update: {
+          name?: string
+          description?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "villages_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      village_members: {
+        Row: {
+          id: string
+          village_id: string
+          user_id: string
+          role: VillageRole
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          village_id: string
+          user_id: string
+          role?: VillageRole
+        }
+        Update: {
+          role?: VillageRole
+        }
+        Relationships: [
+          {
+            foreignKeyName: "village_members_village_id_fkey"
+            columns: ["village_id"]
+            isOneToOne: false
+            referencedRelation: "villages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "village_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      village_invites: {
+        Row: {
+          id: string
+          village_id: string
+          invited_by: string
+          token: string
+          role: VillageRole
+          accepted_at: string | null
+          expires_at: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          village_id: string
+          invited_by: string
+          token?: string
+          role?: VillageRole
+          expires_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "village_invites_village_id_fkey"
+            columns: ["village_id"]
+            isOneToOne: false
+            referencedRelation: "villages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "village_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       shops: {
         Row: {
           id: string
           owner_id: string
+          village_id: string
           name: string
           short_name: string
           description: string | null
@@ -55,6 +158,7 @@ export interface Database {
         Insert: {
           id?: string
           owner_id: string
+          village_id: string
           name: string
           short_name?: string
           description?: string | null
@@ -73,82 +177,12 @@ export interface Database {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-      shop_members: {
-        Row: {
-          id: string
-          shop_id: string
-          user_id: string
-          role: ShopRole
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          shop_id: string
-          user_id: string
-          role?: ShopRole
-        }
-        Update: {
-          role?: ShopRole
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shop_members_shop_id_fkey"
-            columns: ["shop_id"]
-            isOneToOne: false
-            referencedRelation: "shops"
-            referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "shop_members_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: "shops_village_id_fkey"
+            columns: ["village_id"]
             isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      shop_invites: {
-        Row: {
-          id: string
-          shop_id: string
-          invited_by: string
-          phone: string | null
-          email: string | null
-          token: string
-          role: ShopRole
-          accepted_at: string | null
-          expires_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          shop_id: string
-          invited_by: string
-          phone?: string | null
-          email?: string | null
-          token?: string
-          role?: ShopRole
-          expires_at?: string
-        }
-        Update: {
-          accepted_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "shop_invites_shop_id_fkey"
-            columns: ["shop_id"]
-            isOneToOne: false
-            referencedRelation: "shops"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "shop_invites_invited_by_fkey"
-            columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "villages"
             referencedColumns: ["id"]
           }
         ]
@@ -414,7 +448,7 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
-      shop_role: ShopRole
+      village_role: VillageRole
       item_status: ItemStatus
       borrow_status: BorrowStatus
       reservation_status: ReservationStatus

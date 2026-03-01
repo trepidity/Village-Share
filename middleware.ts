@@ -65,6 +65,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Allow invite paths and village creation through without village membership
+  if (pathname.startsWith('/invite/') || pathname.startsWith('/villages/new')) {
+    return supabaseResponse
+  }
+
+  // Check if user belongs to at least one village - redirect to onboarding if not
+  const { count } = await supabase
+    .from('village_members')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+
+  if (count === 0) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/villages/new'
+    return NextResponse.redirect(url)
+  }
+
   return supabaseResponse
 }
 

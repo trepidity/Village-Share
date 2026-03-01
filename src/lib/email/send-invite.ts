@@ -5,8 +5,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 interface SendInviteEmailParams {
   to: string;
   inviterName: string;
-  shopName: string;
-  shopDescription: string | null;
+  villageName: string;
+  villageDescription: string | null;
   role: string;
   inviteUrl: string;
 }
@@ -14,8 +14,8 @@ interface SendInviteEmailParams {
 export async function sendInviteEmail({
   to,
   inviterName,
-  shopName,
-  shopDescription,
+  villageName,
+  villageDescription,
   role,
   inviteUrl,
 }: SendInviteEmailParams) {
@@ -44,11 +44,11 @@ export async function sendInviteEmail({
           <tr>
             <td style="padding:32px;">
               <p style="margin:0 0 16px;color:#3f3f46;font-size:16px;line-height:1.5;">
-                <strong>${inviterName}</strong> has invited you to join <strong>${shopName}</strong> as a <span style="display:inline-block;background-color:#e4e4e7;color:#18181b;padding:2px 8px;border-radius:4px;font-size:14px;font-weight:500;">${roleBadge}</span>.
+                <strong>${inviterName}</strong> has invited you to join <strong>${villageName}</strong> as a <span style="display:inline-block;background-color:#e4e4e7;color:#18181b;padding:2px 8px;border-radius:4px;font-size:14px;font-weight:500;">${roleBadge}</span>.
               </p>
               ${
-                shopDescription
-                  ? `<p style="margin:0 0 24px;color:#71717a;font-size:14px;line-height:1.5;">${shopDescription}</p>`
+                villageDescription
+                  ? `<p style="margin:0 0 24px;color:#71717a;font-size:14px;line-height:1.5;">${villageDescription}</p>`
                   : ""
               }
               <table width="100%" cellpadding="0" cellspacing="0">
@@ -72,12 +72,12 @@ export async function sendInviteEmail({
 </body>
 </html>`.trim();
 
-  const text = `${inviterName} has invited you to join ${shopName} as a ${roleBadge}.${shopDescription ? `\n\n${shopDescription}` : ""}\n\nAccept the invite: ${inviteUrl}\n\nThis invite expires in 7 days.`;
+  const text = `${inviterName} has invited you to join ${villageName} as a ${roleBadge}.${villageDescription ? `\n\n${villageDescription}` : ""}\n\nAccept the invite: ${inviteUrl}\n\nThis invite expires in 7 days.`;
 
   const { error } = await resend.emails.send({
     from,
     to,
-    subject: `You're invited to join ${shopName} on VillageShare`,
+    subject: `You're invited to join ${villageName} on VillageShare`,
     html,
     text,
   });

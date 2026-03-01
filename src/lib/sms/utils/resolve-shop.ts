@@ -2,7 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 /**
  * Try to resolve a shop by name or owner display name.
- * Searches only among shops the user is a member of.
+ * Searches only among shops in villages the user belongs to.
  * Returns the shopId if exactly one match is found, null otherwise.
  */
 export async function resolveShopByName(
@@ -11,33 +11,38 @@ export async function resolveShopByName(
 ): Promise<string | null> {
   const supabase = createAdminClient()
 
-  const { data: memberships, error } = await supabase
-    .from('shop_members')
-    .select('shop_id, shops!inner(id, name, short_name, owner_id)')
+  // Get user's village IDs
+  const { data: villageMemberships, error: vmError } = await supabase
+    .from('village_members')
+    .select('village_id')
     .eq('user_id', userId)
 
-  if (error || !memberships || memberships.length === 0) return null
+  if (vmError || !villageMemberships || villageMemberships.length === 0) return null
+
+  const villageIds = villageMemberships.map((vm) => vm.village_id)
+
+  // Get shops in those villages
+  const { data: shops, error } = await supabase
+    .from('shops')
+    .select('id, name, short_name, owner_id')
+    .in('village_id', villageIds)
+    .eq('is_active', true)
+
+  if (error || !shops || shops.length === 0) return null
 
   const nameLower = shopName.toLowerCase()
 
   // Try matching by shop name or short_name
-  const byShopName = memberships.filter((m) => {
-    const shop = m.shops as unknown as { id: string; name: string; short_name: string; owner_id: string }
-    return shop.name.toLowerCase().includes(nameLower) ||
+  const byShopName = shops.filter(
+    (shop) =>
+      shop.name.toLowerCase().includes(nameLower) ||
       shop.short_name.toLowerCase().includes(nameLower)
-  })
+  )
 
-  if (byShopName.length === 1) return byShopName[0].shop_id
+  if (byShopName.length === 1) return byShopName[0].id
 
   // Try matching by owner display_name
-  const ownerIds = [
-    ...new Set(
-      memberships.map((m) => {
-        const shop = m.shops as unknown as { id: string; name: string; short_name: string; owner_id: string }
-        return shop.owner_id
-      })
-    ),
-  ]
+  const ownerIds = [...new Set(shops.map((s) => s.owner_id))]
 
   const { data: profiles } = await supabase
     .from('profiles')
@@ -47,11 +52,8 @@ export async function resolveShopByName(
 
   if (profiles && profiles.length === 1) {
     const matchingOwner = profiles[0]
-    const match = memberships.find((m) => {
-      const shop = m.shops as unknown as { id: string; name: string; short_name: string; owner_id: string }
-      return shop.owner_id === matchingOwner.id
-    })
-    if (match) return match.shop_id
+    const match = shops.find((s) => s.owner_id === matchingOwner.id)
+    if (match) return match.id
   }
 
   return null

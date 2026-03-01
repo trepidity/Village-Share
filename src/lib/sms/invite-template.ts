@@ -1,13 +1,13 @@
 export function inviteSms({
   inviterName,
-  shopName,
+  villageName,
   role,
   inviteUrl,
 }: {
   inviterName: string
-  shopName: string
+  villageName: string
   role: string
   inviteUrl: string
 }) {
-  return `${inviterName} invited you to join ${shopName} on VillageShare as a ${role}. Accept: ${inviteUrl}`
+  return `${inviterName} invited you to join ${villageName} on VillageShare as a ${role}. Accept: ${inviteUrl}`
 }

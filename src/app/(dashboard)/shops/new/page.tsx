@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -24,10 +24,18 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
-import { Store, ArrowLeft } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Store, ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 const createShopSchema = z.object({
+  village_id: z.string().min(1, "Village is required"),
   short_name: z.string().min(1, "Short name is required").max(12, "Short name must be 12 characters or less"),
   name: z.string().min(1, "Display name is required").max(100, "Name is too long"),
   description: z.string().max(500, "Description is too long").optional(),
@@ -35,19 +43,55 @@ const createShopSchema = z.object({
 
 type CreateShopForm = z.infer<typeof createShopSchema>;
 
+type Village = { id: string; name: string };
+
 export default function NewShopPage() {
   const [error, setError] = useState("");
+  const [villages, setVillages] = useState<Village[]>([]);
+  const [loadingVillages, setLoadingVillages] = useState(true);
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const preselectedVillageId = searchParams.get("villageId") ?? "";
 
   const form = useForm<CreateShopForm>({
     resolver: zodResolver(createShopSchema),
     defaultValues: {
+      village_id: preselectedVillageId,
       short_name: "",
       name: "",
       description: "",
     },
   });
+
+  useEffect(() => {
+    const fetchVillages = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from("village_members")
+        .select("villages(id, name)")
+        .eq("user_id", user.id);
+
+      const villageList = (data ?? [])
+        .map((m) => m.villages as unknown as Village)
+        .filter(Boolean);
+
+      setVillages(villageList);
+
+      // Auto-select if only one village and no preselection
+      if (villageList.length === 1 && !preselectedVillageId) {
+        form.setValue("village_id", villageList[0].id);
+      }
+
+      setLoadingVillages(false);
+    };
+
+    fetchVillages();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onSubmit = async (values: CreateShopForm) => {
     setError("");
@@ -67,6 +111,7 @@ export default function NewShopPage() {
         short_name: values.short_name,
         description: values.description || null,
         owner_id: user.id,
+        village_id: values.village_id,
       })
       .select("id")
       .single();
@@ -76,15 +121,35 @@ export default function NewShopPage() {
       return;
     }
 
-    // Also add the owner as a shop member
-    await supabase.from("shop_members").insert({
-      shop_id: shop.id,
-      user_id: user.id,
-      role: "owner",
-    });
-
     router.push(`/shops/${shop.id}`);
   };
+
+  if (loadingVillages) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="size-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (villages.length === 0) {
+    return (
+      <div className="mx-auto max-w-2xl space-y-6 p-6">
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12">
+            <Store className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No villages yet</h3>
+            <p className="text-muted-foreground mb-4 text-center">
+              You need to be in a village before creating a shop.
+            </p>
+            <Button asChild>
+              <Link href="/villages/new">Create a Village First</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-6">
@@ -104,8 +169,8 @@ export default function NewShopPage() {
             Shop Details
           </CardTitle>
           <CardDescription>
-            A shop is a community space where members can share and borrow
-            items. Give it a name and optional description.
+            A shop is a lending library within your village where members can
+            share and borrow items.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,6 +180,31 @@ export default function NewShopPage() {
 
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <FormField
+                control={form.control}
+                name="village_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Village</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select a village" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {villages.map((v) => (
+                          <SelectItem key={v.id} value={v.id}>
+                            {v.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <FormField
                 control={form.control}
                 name="short_name"

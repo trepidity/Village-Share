@@ -59,17 +59,20 @@ export default async function ShopDetailPage({
     notFound();
   }
 
-  const [{ data: items }, { count: memberCount }] = await Promise.all([
+  const [{ data: items }, { data: villageData }] = await Promise.all([
     supabase
       .from("items")
       .select("*")
       .eq("shop_id", shopId)
       .order("created_at", { ascending: false }),
     supabase
-      .from("shop_members")
-      .select("*", { count: "exact", head: true })
-      .eq("shop_id", shopId),
+      .from("villages")
+      .select("id, name")
+      .eq("id", shop.village_id)
+      .single(),
   ]);
+
+  const village = villageData;
 
   const shopItems = items ?? [];
 
@@ -83,6 +86,14 @@ export default async function ShopDetailPage({
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{shop.name}</h1>
+          {village && (
+            <Link
+              href={`/villages/${village.id}`}
+              className="text-sm text-primary hover:underline"
+            >
+              {village.name}
+            </Link>
+          )}
           {shop.description && (
             <p className="text-muted-foreground">{shop.description}</p>
           )}
@@ -103,15 +114,16 @@ export default async function ShopDetailPage({
             </div>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="flex items-center gap-3 pt-0">
-            <Users className="size-8 text-muted-foreground" />
-            <div>
-              <p className="text-2xl font-bold">{memberCount ?? 0}</p>
-              <p className="text-sm text-muted-foreground">Members</p>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href={village ? `/villages/${village.id}/members` : "#"}>
+          <Card className="hover:border-primary/50 transition-colors">
+            <CardContent className="flex items-center gap-3 pt-0">
+              <Users className="size-8 text-muted-foreground" />
+              <div>
+                <p className="text-sm text-muted-foreground">Village Members</p>
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
         <Card className="col-span-2 sm:col-span-1">
           <CardContent className="flex items-center gap-3 pt-0">
             <div className="size-8 rounded-full bg-green-100 dark:bg-green-900 flex items-center justify-center">
@@ -239,25 +251,29 @@ export default async function ShopDetailPage({
         <TabsContent value="members" className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Members</h2>
-            <Button asChild>
-              <Link href={`/shops/${shopId}/members`}>
-                <Users className="size-4" />
-                Manage Members
-              </Link>
-            </Button>
+            {village && (
+              <Button asChild>
+                <Link href={`/villages/${village.id}/members`}>
+                  <Users className="size-4" />
+                  Manage Village Members
+                </Link>
+              </Button>
+            )}
           </div>
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-8 text-center">
               <Users className="mb-4 size-10 text-muted-foreground" />
               <p className="text-muted-foreground">
-                {memberCount ?? 0} member{(memberCount ?? 0) !== 1 ? "s" : ""} in
-                this shop.
+                Members are managed at the village level. Anyone in the village
+                can access this shop.
               </p>
-              <Button variant="outline" className="mt-4" asChild>
-                <Link href={`/shops/${shopId}/members`}>
-                  View & Manage Members
-                </Link>
-              </Button>
+              {village && (
+                <Button variant="outline" className="mt-4" asChild>
+                  <Link href={`/villages/${village.id}/members`}>
+                    View Village Members
+                  </Link>
+                </Button>
+              )}
             </CardContent>
           </Card>
         </TabsContent>

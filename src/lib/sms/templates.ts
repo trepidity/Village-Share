@@ -135,7 +135,7 @@ export const templates = {
     `I couldn't find "${itemName}" in any of your shops. Text SEARCH to see what's available.`,
 
   noActiveShop: () =>
-    "You're not connected to a shop yet. Ask a shop owner for an invite, or visit the app to create your own.",
+    "You're not part of a village yet. Ask someone for an invite link, or visit the app to create your own village.",
 
   error: () =>
     'Oops, something went wrong on our end. Please try again in a moment.',

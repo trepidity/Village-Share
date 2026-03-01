@@ -204,10 +204,23 @@ async function resolveShop(
 ): Promise<{ shopId?: string; error?: string }> {
   const supabase = createAdminClient()
 
-  const { data: memberships, error } = await supabase
-    .from('shop_members')
-    .select('shop_id, shops!inner(id, short_name)')
+  // Query village_members to get user's villages, then find shops in those villages
+  const { data: villageMemberships, error: vmError } = await supabase
+    .from('village_members')
+    .select('village_id')
     .eq('user_id', userId)
+
+  if (vmError || !villageMemberships || villageMemberships.length === 0) {
+    return { error: templates.noActiveShop() }
+  }
+
+  const villageIds = villageMemberships.map((vm) => vm.village_id)
+
+  const { data: memberships, error } = await supabase
+    .from('shops')
+    .select('id, short_name')
+    .in('village_id', villageIds)
+    .eq('is_active', true)
 
   if (error) {
     console.error('Shop resolve error:', error)
@@ -219,14 +232,11 @@ async function resolveShop(
   }
 
   if (memberships.length === 1) {
-    return { shopId: memberships[0].shop_id }
+    return { shopId: memberships[0].id }
   }
 
   // Multiple shops - ask user to pick
-  const shopNames = memberships.map((m) => {
-    const shop = m.shops as unknown as { id: string; short_name: string }
-    return shop.short_name
-  })
+  const shopNames = memberships.map((m) => m.short_name)
 
   return {
     error:

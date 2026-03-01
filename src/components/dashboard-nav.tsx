@@ -13,6 +13,7 @@ import {
   Plus,
   Menu,
   X,
+  Home,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -44,6 +45,7 @@ interface DashboardNavProps {
 
 const navLinks = [
   { href: "/chat", label: "Chat", icon: MessageCircle },
+  { href: "/villages", label: "My Villages", icon: Home },
   { href: "/shops", label: "My Shops", icon: Store },
   { href: "/borrows", label: "My Borrows", icon: BookOpen },
 ]

@@ -16,11 +16,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { shopId, email, phone, role } = await request.json();
+  const { villageId, email, phone, role } = await request.json();
 
-  if (!shopId || !role) {
+  if (!villageId || !role) {
     return NextResponse.json(
-      { error: "shopId and role are required" },
+      { error: "villageId and role are required" },
       { status: 400 }
     );
   }
@@ -45,11 +45,11 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
-  // Verify the current user is an owner or admin of this shop
+  // Verify the current user is an owner or admin of this village
   const { data: membership } = await admin
-    .from("shop_members")
+    .from("village_members")
     .select("role")
-    .eq("shop_id", shopId)
+    .eq("village_id", villageId)
     .eq("user_id", user.id)
     .single();
 
@@ -57,15 +57,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Fetch shop details
-  const { data: shop } = await admin
-    .from("shops")
+  // Fetch village details
+  const { data: village } = await admin
+    .from("villages")
     .select("name, description")
-    .eq("id", shopId)
+    .eq("id", villageId)
     .single();
 
-  if (!shop) {
-    return NextResponse.json({ error: "Shop not found" }, { status: 404 });
+  if (!village) {
+    return NextResponse.json({ error: "Village not found" }, { status: 404 });
   }
 
   // Fetch inviter display name
@@ -77,17 +77,14 @@ export async function POST(request: NextRequest) {
 
   const inviterName = profile?.display_name || "A VillageShare member";
 
-  // Create the invite
+  // Create the invite (token-only, no phone/email stored on the invite)
   const token = crypto.randomUUID();
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
-  const normalizedPhone = phone ? normalizePhone(phone) : null;
-
-  const { error: insertError } = await admin.from("shop_invites").insert({
-    shop_id: shopId,
+  const { error: insertError } = await admin.from("village_invites").insert({
+    village_id: villageId,
     invited_by: user.id,
-    ...(email ? { email } : { phone: normalizedPhone }),
     token,
     role,
     expires_at: expiresAt.toISOString(),
@@ -97,7 +94,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: insertError.message }, { status: 500 });
   }
 
-  // Build the invite URL using the deployed app URL
+  // Build the invite URL
   const baseUrl =
     process.env.NEXT_PUBLIC_APP_URL ||
     process.env.NEXT_PUBLIC_SITE_URL ||
@@ -105,11 +102,12 @@ export async function POST(request: NextRequest) {
   const inviteUrl = `${baseUrl}/invite/${token}`;
 
   if (phone) {
-    // Send SMS invite
+    // Send SMS invite (delivery mechanism only)
+    const normalizedPhone = normalizePhone(phone);
     try {
       await sendSms(
-        phone,
-        inviteSms({ inviterName, shopName: shop.name, role, inviteUrl })
+        normalizedPhone,
+        inviteSms({ inviterName, villageName: village.name, role, inviteUrl })
       );
     } catch (err) {
       return NextResponse.json(
@@ -120,13 +118,13 @@ export async function POST(request: NextRequest) {
       );
     }
   } else {
-    // Send email invite
+    // Send email invite (delivery mechanism only)
     try {
       await sendInviteEmail({
         to: email,
         inviterName,
-        shopName: shop.name,
-        shopDescription: shop.description,
+        villageName: village.name,
+        villageDescription: village.description,
         role,
         inviteUrl,
       });

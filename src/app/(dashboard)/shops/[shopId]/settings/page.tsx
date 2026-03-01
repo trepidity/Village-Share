@@ -39,6 +39,7 @@ import {
 import {
   ArrowLeft,
   Calendar,
+  Home,
   Loader2,
   Power,
   PowerOff,
@@ -48,6 +49,7 @@ import {
 import Link from "next/link";
 
 type Shop = Database["public"]["Tables"]["shops"]["Row"];
+type Village = { id: string; name: string };
 type BlackoutPeriod = Database["public"]["Tables"]["blackout_periods"]["Row"];
 
 const shopSchema = z.object({
@@ -76,6 +78,7 @@ export default function SettingsPage({
   const router = useRouter();
 
   const [shop, setShop] = useState<Shop | null>(null);
+  const [village, setVillage] = useState<Village | null>(null);
   const [blackouts, setBlackouts] = useState<BlackoutPeriod[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -118,6 +121,13 @@ export default function SettingsPage({
 
     if (shopData) {
       setShop(shopData);
+      // Fetch village info
+      const { data: villageData } = await supabase
+        .from("villages")
+        .select("id, name")
+        .eq("id", shopData.village_id)
+        .single();
+      if (villageData) setVillage(villageData);
     }
 
     setBlackouts(blackoutData ?? []);
@@ -258,6 +268,22 @@ export default function SettingsPage({
 
       {error && <p className="text-sm text-destructive">{error}</p>}
       {success && <p className="text-sm text-green-600">{success}</p>}
+
+      {/* Village info */}
+      {village && (
+        <Card>
+          <CardContent className="flex items-center gap-3 pt-0">
+            <Home className="size-5 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Village</p>
+              <p className="text-muted-foreground">{village.name}</p>
+            </div>
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/villages/${village.id}`}>View Village</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Edit shop details */}
       <Card>

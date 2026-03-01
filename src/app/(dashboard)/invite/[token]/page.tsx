@@ -10,10 +10,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Clock, Store, UserPlus } from "lucide-react";
-import type { ShopRole } from "@/lib/supabase/types";
+import { AlertCircle, CheckCircle, Clock, Home, UserPlus } from "lucide-react";
+import type { VillageRole } from "@/lib/supabase/types";
 
-const roleLabels: Record<ShopRole, string> = {
+const roleLabels: Record<VillageRole, string> = {
   owner: "Owner",
   admin: "Admin",
   member: "Member",
@@ -35,7 +35,7 @@ async function acceptInvite(formData: FormData) {
 
   // Fetch the invite
   const { data: invite } = await supabase
-    .from("shop_invites")
+    .from("village_invites")
     .select("*")
     .eq("token", token)
     .is("accepted_at", null)
@@ -48,16 +48,16 @@ async function acceptInvite(formData: FormData) {
 
   // Check if already a member
   const { data: existingMember } = await supabase
-    .from("shop_members")
+    .from("village_members")
     .select("id")
-    .eq("shop_id", invite.shop_id)
+    .eq("village_id", invite.village_id)
     .eq("user_id", user.id)
     .single();
 
   if (!existingMember) {
-    // Create shop member record
-    await supabase.from("shop_members").insert({
-      shop_id: invite.shop_id,
+    // Create village member record
+    await supabase.from("village_members").insert({
+      village_id: invite.village_id,
       user_id: user.id,
       role: invite.role,
     });
@@ -65,11 +65,11 @@ async function acceptInvite(formData: FormData) {
 
   // Mark invite as accepted
   await supabase
-    .from("shop_invites")
+    .from("village_invites")
     .update({ accepted_at: new Date().toISOString() })
     .eq("id", invite.id);
 
-  redirect(`/shops/${invite.shop_id}`);
+  redirect(`/villages/${invite.village_id}`);
 }
 
 export default async function InvitePage({
@@ -82,7 +82,7 @@ export default async function InvitePage({
 
   // Look up the invite
   const { data: invite } = await supabase
-    .from("shop_invites")
+    .from("village_invites")
     .select("*")
     .eq("token", token)
     .single();
@@ -106,11 +106,9 @@ export default async function InvitePage({
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
-            <form action={`/shops/${invite.shop_id}`}>
-              <Button asChild>
-                <a href={`/shops/${invite.shop_id}`}>Go to Shop</a>
-              </Button>
-            </form>
+            <Button asChild>
+              <a href={`/villages/${invite.village_id}`}>Go to Village</a>
+            </Button>
           </CardContent>
         </Card>
       </div>
@@ -142,12 +140,12 @@ export default async function InvitePage({
     );
   }
 
-  // Fetch shop details and inviter
-  const [{ data: shop }, { data: inviter }] = await Promise.all([
+  // Fetch village details and inviter
+  const [{ data: village }, { data: inviter }] = await Promise.all([
     supabase
-      .from("shops")
+      .from("villages")
       .select("id, name, description")
-      .eq("id", invite.shop_id)
+      .eq("id", invite.village_id)
       .single(),
     supabase
       .from("profiles")
@@ -156,7 +154,7 @@ export default async function InvitePage({
       .single(),
   ]);
 
-  if (!shop) {
+  if (!village) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <Card className="w-full max-w-md">
@@ -164,9 +162,9 @@ export default async function InvitePage({
             <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
               <AlertCircle className="size-6 text-red-600 dark:text-red-400" />
             </div>
-            <CardTitle>Shop Not Found</CardTitle>
+            <CardTitle>Village Not Found</CardTitle>
             <CardDescription>
-              The shop associated with this invite no longer exists.
+              The village associated with this invite no longer exists.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex justify-center">
@@ -194,19 +192,19 @@ export default async function InvitePage({
           <CardTitle>You&apos;re Invited!</CardTitle>
           <CardDescription>
             {inviter?.display_name
-              ? `${inviter.display_name} has invited you to join a shop.`
-              : "You've been invited to join a shop."}
+              ? `${inviter.display_name} has invited you to join a village.`
+              : "You've been invited to join a village."}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="rounded-lg border p-4 text-center">
             <div className="mb-2 flex items-center justify-center gap-2">
-              <Store className="size-5 text-muted-foreground" />
-              <p className="text-lg font-semibold">{shop.name}</p>
+              <Home className="size-5 text-muted-foreground" />
+              <p className="text-lg font-semibold">{village.name}</p>
             </div>
-            {shop.description && (
+            {village.description && (
               <p className="mb-3 text-sm text-muted-foreground">
-                {shop.description}
+                {village.description}
               </p>
             )}
             <div className="flex items-center justify-center gap-2">
@@ -224,7 +222,7 @@ export default async function InvitePage({
               <input type="hidden" name="token" value={token} />
               <Button type="submit" className="w-full" size="lg">
                 <UserPlus className="size-4" />
-                Accept Invite & Join Shop
+                Accept Invite & Join Village
               </Button>
             </form>
           ) : (

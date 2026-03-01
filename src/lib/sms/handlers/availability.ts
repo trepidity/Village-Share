@@ -24,28 +24,35 @@ export async function handleAvailability(
       return 'What item do you want to check? Text "is [item] available?" to check availability.'
     }
 
-    // Get all shops the user belongs to
-    const { data: memberships, error: memberError } = await supabase
-      .from('shop_members')
-      .select('shop_id, shops!inner(id, short_name)')
+    // Get all shops in user's villages
+    const { data: villageMemberships, error: vmError } = await supabase
+      .from('village_members')
+      .select('village_id')
       .eq('user_id', context.userId)
 
-    if (memberError) {
-      console.error('Availability membership error:', memberError)
-      return templates.error()
-    }
-
-    if (!memberships || memberships.length === 0) {
+    if (vmError || !villageMemberships || villageMemberships.length === 0) {
       return templates.noActiveShop()
     }
 
-    const shopIds = memberships.map((m) => m.shop_id)
-    const shopMap = new Map(
-      memberships.map((m) => {
-        const shop = m.shops as unknown as { id: string; short_name: string }
-        return [m.shop_id, shop.short_name]
-      })
-    )
+    const villageIds = villageMemberships.map((vm) => vm.village_id)
+
+    const { data: shops, error: shopError } = await supabase
+      .from('shops')
+      .select('id, short_name')
+      .in('village_id', villageIds)
+      .eq('is_active', true)
+
+    if (shopError) {
+      console.error('Availability shop error:', shopError)
+      return templates.error()
+    }
+
+    if (!shops || shops.length === 0) {
+      return templates.noActiveShop()
+    }
+
+    const shopIds = shops.map((s) => s.id)
+    const shopMap = new Map(shops.map((s) => [s.id, s.short_name]))
 
     // Search for items across all shops
     const { data: items, error: searchError } = await supabase

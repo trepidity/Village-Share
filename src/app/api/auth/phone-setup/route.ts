@@ -34,38 +34,5 @@ export async function POST(request: NextRequest) {
     { onConflict: "phone" }
   );
 
-  // Auto-accept any pending invites matching this phone number
-  const { data: pendingInvites } = await admin
-    .from("shop_invites")
-    .select("id, shop_id, role")
-    .eq("phone", phone)
-    .is("accepted_at", null)
-    .gt("expires_at", new Date().toISOString());
-
-  if (pendingInvites && pendingInvites.length > 0) {
-    for (const invite of pendingInvites) {
-      // Check if already a member of this shop
-      const { data: existing } = await admin
-        .from("shop_members")
-        .select("id")
-        .eq("shop_id", invite.shop_id)
-        .eq("user_id", user.id)
-        .single();
-
-      if (!existing) {
-        await admin.from("shop_members").insert({
-          shop_id: invite.shop_id,
-          user_id: user.id,
-          role: invite.role,
-        });
-      }
-
-      await admin
-        .from("shop_invites")
-        .update({ accepted_at: new Date().toISOString() })
-        .eq("id", invite.id);
-    }
-  }
-
   return NextResponse.json({ success: true });
 }
