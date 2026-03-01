@@ -233,7 +233,7 @@ describe('SMS Parser', () => {
 
     it('matches "is anyone using the drill?"', () => {
       const result = parseMessage('is anyone using the drill?')
-      expect(result.type).toBe('AVAILABILITY')
+      expect(result.type).toBe('WHO_HAS')
       expect(result.entities.itemName).toBe('drill')
     })
 
@@ -269,31 +269,33 @@ describe('SMS Parser', () => {
 
     it('matches "is someone borrowing the ladder?"', () => {
       const result = parseMessage('is someone borrowing the ladder?')
-      expect(result.type).toBe('AVAILABILITY')
+      expect(result.type).toBe('WHO_HAS')
       expect(result.entities.itemName).toBe('ladder')
     })
+  })
 
+  describe('WHO_HAS intent', () => {
     it('matches "who has a drill"', () => {
       const result = parseMessage('who has a drill')
-      expect(result.type).toBe('AVAILABILITY')
+      expect(result.type).toBe('WHO_HAS')
       expect(result.entities.itemName).toBe('drill')
     })
 
     it('matches "who has the trailer?"', () => {
       const result = parseMessage('who has the trailer?')
-      expect(result.type).toBe('AVAILABILITY')
+      expect(result.type).toBe('WHO_HAS')
       expect(result.entities.itemName).toBe('trailer')
     })
 
     it('matches "who\'s got the saw?"', () => {
       const result = parseMessage("who's got the saw?")
-      expect(result.type).toBe('AVAILABILITY')
+      expect(result.type).toBe('WHO_HAS')
       expect(result.entities.itemName).toBe('saw')
     })
 
     it('matches "who\'s using the mower?"', () => {
       const result = parseMessage("who's using the mower?")
-      expect(result.type).toBe('AVAILABILITY')
+      expect(result.type).toBe('WHO_HAS')
       expect(result.entities.itemName).toBe('mower')
     })
 
