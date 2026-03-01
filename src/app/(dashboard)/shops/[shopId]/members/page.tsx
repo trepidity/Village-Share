@@ -44,6 +44,7 @@ import {
   Link2,
   Loader2,
   Mail,
+  Phone,
   Shield,
   User,
   UserPlus,
@@ -95,6 +96,9 @@ export default function MembersPage({
   const [inviteEmail, setInviteEmail] = useState("");
   const [sendingEmail, setSendingEmail] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [invitePhone, setInvitePhone] = useState("");
+  const [sendingPhone, setSendingPhone] = useState(false);
+  const [smsSent, setSmsSent] = useState(false);
 
   const fetchData = useCallback(async () => {
     const {
@@ -197,6 +201,31 @@ export default function MembersPage({
     }
   };
 
+  const sendSmsInvite = async () => {
+    setSendingPhone(true);
+    setError("");
+    setSmsSent(false);
+
+    try {
+      const res = await fetch("/api/invites/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ shopId, phone: invitePhone, role: inviteRole }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to send SMS invite");
+
+      setSmsSent(true);
+      setInvitePhone("");
+      await fetchData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send SMS invite");
+    } finally {
+      setSendingPhone(false);
+    }
+  };
+
   const copyInviteLink = async (token: string, inviteId: string) => {
     const link = `${window.location.origin}/invite/${token}`;
     await navigator.clipboard.writeText(link);
@@ -287,6 +316,8 @@ export default function MembersPage({
                 setError("");
                 setEmailSent(false);
                 setInviteEmail("");
+                setSmsSent(false);
+                setInvitePhone("");
               }
             }}>
             <DialogTrigger asChild>
@@ -299,8 +330,8 @@ export default function MembersPage({
               <DialogHeader>
                 <DialogTitle>Invite a Member</DialogTitle>
                 <DialogDescription>
-                  Send an email invite or generate a link to share. Invites
-                  expire in 7 days.
+                  Send an invite via email or SMS, or generate a link to share.
+                  Invites expire in 7 days.
                 </DialogDescription>
               </DialogHeader>
 
@@ -308,6 +339,11 @@ export default function MembersPage({
               {emailSent && (
                 <p className="text-sm text-green-600">
                   Invite email sent successfully!
+                </p>
+              )}
+              {smsSent && (
+                <p className="text-sm text-green-600">
+                  SMS invite sent successfully!
                 </p>
               )}
 
@@ -333,11 +369,15 @@ export default function MembersPage({
                 <TabsList className="w-full">
                   <TabsTrigger value="email" className="flex-1">
                     <Mail className="mr-1 size-3.5" />
-                    Send Email
+                    Email
+                  </TabsTrigger>
+                  <TabsTrigger value="sms" className="flex-1">
+                    <Phone className="mr-1 size-3.5" />
+                    SMS
                   </TabsTrigger>
                   <TabsTrigger value="link" className="flex-1">
                     <Link2 className="mr-1 size-3.5" />
-                    Generate Link
+                    Link
                   </TabsTrigger>
                 </TabsList>
                 <TabsContent value="email" className="space-y-4">
@@ -360,6 +400,28 @@ export default function MembersPage({
                     )}
                     <Mail className="size-4" />
                     Send Email Invite
+                  </Button>
+                </TabsContent>
+                <TabsContent value="sms" className="space-y-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium">Phone number</label>
+                    <Input
+                      type="tel"
+                      placeholder="+1 (555) 123-4567"
+                      value={invitePhone}
+                      onChange={(e) => setInvitePhone(e.target.value)}
+                    />
+                  </div>
+                  <Button
+                    onClick={sendSmsInvite}
+                    disabled={sendingPhone || !invitePhone}
+                    className="w-full"
+                  >
+                    {sendingPhone && (
+                      <Loader2 className="size-4 animate-spin" />
+                    )}
+                    <Phone className="size-4" />
+                    Send SMS Invite
                   </Button>
                 </TabsContent>
                 <TabsContent value="link">
@@ -464,10 +526,12 @@ export default function MembersPage({
                 className="flex items-center gap-3 rounded-lg border p-3"
               >
                 {invite.email ? (
-                <Mail className="size-5 shrink-0 text-muted-foreground" />
-              ) : (
-                <Link2 className="size-5 shrink-0 text-muted-foreground" />
-              )}
+                  <Mail className="size-5 shrink-0 text-muted-foreground" />
+                ) : invite.phone ? (
+                  <Phone className="size-5 shrink-0 text-muted-foreground" />
+                ) : (
+                  <Link2 className="size-5 shrink-0 text-muted-foreground" />
+                )}
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <Badge
@@ -484,6 +548,10 @@ export default function MembersPage({
                   {invite.email ? (
                     <p className="mt-1 truncate text-xs text-muted-foreground">
                       {invite.email}
+                    </p>
+                  ) : invite.phone ? (
+                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                      {invite.phone}
                     </p>
                   ) : (
                     <p className="mt-1 truncate text-xs text-muted-foreground font-mono">
