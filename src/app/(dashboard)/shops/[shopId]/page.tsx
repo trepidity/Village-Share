@@ -157,7 +157,7 @@ export default async function ShopDetailPage({
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Shop Items</h2>
             <Button asChild>
-              <Link href={`/shops/${shopId}/items`}>
+              <Link href={`/shops/${shopId}/items?add=true`}>
                 <Plus className="size-4" />
                 Add Item
               </Link>
@@ -173,7 +173,7 @@ export default async function ShopDetailPage({
                   Add your first item to start sharing with your community.
                 </CardDescription>
                 <Button className="mt-4" asChild>
-                  <Link href={`/shops/${shopId}/items`}>
+                  <Link href={`/shops/${shopId}/items?add=true`}>
                     <Plus className="size-4" />
                     Add Your First Item
                   </Link>
