@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { normalizePhone } from "@/lib/utils/phone";
 
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect");
+
   const [phone, setPhone] = useState("");
   const [otp, setOtp] = useState("");
   const [step, setStep] = useState<"phone" | "otp">("phone");
@@ -16,10 +28,14 @@ export default function LoginPage() {
 
   const signInWithGoogle = async () => {
     const supabase = createClient();
+    // Encode redirect in the path — Supabase preserves paths but strips query params
+    const callbackPath = redirectTo
+      ? `/callback${redirectTo}`
+      : `/callback`;
     await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
-        redirectTo: `${window.location.origin}/callback`,
+        redirectTo: `${window.location.origin}${callbackPath}`,
       },
     });
   };
@@ -64,7 +80,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone: normalized }),
       });
-      window.location.href = "/";
+      window.location.href = redirectTo || "/";
     } catch {
       setError("Verification failed");
     } finally {

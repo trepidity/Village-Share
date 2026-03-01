@@ -1,6 +1,9 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { acceptVillageInvite } from "@/lib/invites/accept";
+import { debugLog } from "@/lib/debug-log";
 import {
   Card,
   CardContent,
@@ -11,6 +14,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AlertCircle, CheckCircle, Clock, Home, UserPlus } from "lucide-react";
+import { InviteSignIn } from "@/components/invite-sign-in";
 import type { VillageRole } from "@/lib/supabase/types";
 
 const roleLabels: Record<VillageRole, string> = {
@@ -33,43 +37,13 @@ async function acceptInvite(formData: FormData) {
     redirect("/login");
   }
 
-  // Fetch the invite
-  const { data: invite } = await supabase
-    .from("village_invites")
-    .select("*")
-    .eq("token", token)
-    .is("accepted_at", null)
-    .gt("expires_at", new Date().toISOString())
-    .single();
+  const result = await acceptVillageInvite(token, user.id);
 
-  if (!invite) {
+  if (!result.success) {
     redirect("/");
   }
 
-  // Check if already a member
-  const { data: existingMember } = await supabase
-    .from("village_members")
-    .select("id")
-    .eq("village_id", invite.village_id)
-    .eq("user_id", user.id)
-    .single();
-
-  if (!existingMember) {
-    // Create village member record
-    await supabase.from("village_members").insert({
-      village_id: invite.village_id,
-      user_id: user.id,
-      role: invite.role,
-    });
-  }
-
-  // Mark invite as accepted
-  await supabase
-    .from("village_invites")
-    .update({ accepted_at: new Date().toISOString() })
-    .eq("id", invite.id);
-
-  redirect(`/villages/${invite.village_id}`);
+  redirect(`/villages/${result.villageId}`);
 }
 
 export default async function InvitePage({
@@ -78,16 +52,21 @@ export default async function InvitePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
+  debugLog("INVITE", `Page loaded with token: ${token}`);
   const supabase = await createClient();
+  const admin = createAdminClient();
 
-  // Look up the invite
-  const { data: invite } = await supabase
+  // Look up the invite using admin client (page is accessible to unauthenticated users)
+  const { data: invite, error: inviteError } = await admin
     .from("village_invites")
     .select("*")
     .eq("token", token)
     .single();
 
+  debugLog("INVITE", `Invite lookup: found=${!!invite}, error=${inviteError?.message ?? 'none'}, accepted_at=${invite?.accepted_at ?? 'null'}, expires_at=${invite?.expires_at ?? 'null'}`);
+
   if (!invite) {
+    debugLog("INVITE", `-> invite not found, returning 404`);
     notFound();
   }
 
@@ -140,14 +119,33 @@ export default async function InvitePage({
     );
   }
 
-  // Fetch village details and inviter
+  // Auto-accept: if user is authenticated, accept immediately and redirect
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  debugLog("INVITE", `Auth check: user=${user?.id ?? 'NONE'}`);
+
+  if (user) {
+    debugLog("INVITE", `Attempting auto-accept for user ${user.id} with token ${token}`);
+    const result = await acceptVillageInvite(token, user.id);
+    debugLog("INVITE", `Auto-accept result: success=${result.success}, villageId=${result.villageId}, error=${result.error}`);
+    if (result.success) {
+      debugLog("INVITE", `-> redirecting to /villages/${result.villageId}`);
+      redirect(`/villages/${result.villageId}`);
+    }
+    debugLog("INVITE", `-> auto-accept failed, falling through to display page`);
+    // If acceptance failed, fall through to show the invite page with error
+  }
+
+  // Use admin client to bypass RLS — unauthenticated users need to see village details
   const [{ data: village }, { data: inviter }] = await Promise.all([
-    supabase
+    admin
       .from("villages")
       .select("id, name, description")
       .eq("id", invite.village_id)
       .single(),
-    supabase
+    admin
       .from("profiles")
       .select("display_name")
       .eq("id", invite.invited_by)
@@ -176,11 +174,6 @@ export default async function InvitePage({
       </div>
     );
   }
-
-  // Check if user is authenticated
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -226,16 +219,7 @@ export default async function InvitePage({
               </Button>
             </form>
           ) : (
-            <div className="space-y-3">
-              <p className="text-center text-sm text-muted-foreground">
-                You need to sign in before you can accept this invite.
-              </p>
-              <Button className="w-full" size="lg" asChild>
-                <a href={`/login?redirect=/invite/${token}`}>
-                  Sign In to Accept
-                </a>
-              </Button>
-            </div>
+            <InviteSignIn token={token} />
           )}
 
           <p className="text-center text-xs text-muted-foreground">

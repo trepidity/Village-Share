@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +9,40 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SetupPhonePage() {
+  return (
+    <Suspense>
+      <SetupPhoneForm />
+    </Suspense>
+  );
+}
+
+function getRedirectFromStorage(): string | null {
+  if (typeof window === "undefined") return null;
+
+  // Try cookie first
+  const cookieMatch = document.cookie.match(/(?:^|;\s*)auth_redirect=([^;]*)/);
+  if (cookieMatch) {
+    document.cookie = "auth_redirect=; path=/; max-age=0";
+    return decodeURIComponent(cookieMatch[1]);
+  }
+
+  // Fall back to localStorage
+  const lsValue = localStorage.getItem("auth_redirect");
+  if (lsValue) {
+    // Don't clear yet — keep for AuthRedirectHandler in case setup-phone redirects to /
+    return lsValue;
+  }
+
+  return null;
+}
+
+function SetupPhoneForm() {
+  const searchParams = useSearchParams();
+  const paramRedirect = searchParams.get("redirect");
+  const storageRedirect = getRedirectFromStorage();
+  const redirectTo = paramRedirect || storageRedirect;
+  console.log(`[SETUP-PHONE] paramRedirect=${paramRedirect}, storageRedirect=${storageRedirect}, final redirectTo=${redirectTo}`);
+
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");
   const [step, setStep] = useState<"phone" | "verify">("phone");
@@ -57,7 +92,7 @@ export default function SetupPhonePage() {
       if (updateError) throw new Error(updateError.message);
 
       // Hard redirect to ensure fresh server-side session
-      window.location.href = "/";
+      window.location.href = redirectTo || "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {

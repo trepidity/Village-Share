@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { DashboardNav } from "@/components/dashboard-nav"
+import { AuthRedirectHandler } from "@/components/auth-redirect-handler"
 
 export default async function DashboardLayout({
   children,
@@ -29,6 +30,8 @@ export default async function DashboardLayout({
         user={{ id: user.id, email: user.email }}
         profile={profile}
       />
+
+      <AuthRedirectHandler />
 
       {/* Main content area */}
       <main className="md:pl-64">
