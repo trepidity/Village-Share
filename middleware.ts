@@ -35,8 +35,7 @@ export async function middleware(request: NextRequest) {
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/login') ||
-    pathname.startsWith('/callback') ||
-    pathname === '/'
+    pathname.startsWith('/callback')
   ) {
     return supabaseResponse
   }

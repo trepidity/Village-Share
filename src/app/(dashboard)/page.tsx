@@ -21,6 +21,7 @@ export default async function DashboardPage() {
 
   if (!user) {
     redirect("/login")
+    return // unreachable, satisfies TypeScript
   }
 
   // Fetch user's shops via shop_members join
