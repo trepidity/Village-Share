@@ -31,8 +31,6 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl
 
-  console.log(`[MW] pathname=${pathname} user=${user?.id ?? 'NONE'} auth_redirect_cookie=${request.cookies.get('auth_redirect')?.value ?? 'NONE'}`)
-
   // Allow public routes
   if (
     pathname.startsWith('/api/') ||
@@ -40,7 +38,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/callback') ||
     pathname.startsWith('/invite/')
   ) {
-    console.log(`[MW] -> allowing public route: ${pathname}`)
     return supabaseResponse
   }
 
@@ -48,13 +45,11 @@ export async function middleware(request: NextRequest) {
   if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    console.log(`[MW] -> no user, redirecting to: ${url.toString()}`)
     return NextResponse.redirect(url)
   }
 
   // Allow setup-phone page
   if (pathname.startsWith('/setup-phone')) {
-    console.log(`[MW] -> allowing setup-phone`)
     return supabaseResponse
   }
 
@@ -65,18 +60,14 @@ export async function middleware(request: NextRequest) {
     .eq('id', user.id)
     .single()
 
-  console.log(`[MW] phone_verified=${profile?.phone_verified} isInvitePath=${pathname.startsWith('/invite/')}`)
-
   if (profile && !profile.phone_verified && !pathname.startsWith('/invite/')) {
     const url = request.nextUrl.clone()
     url.pathname = '/setup-phone'
-    console.log(`[MW] -> phone not verified, redirecting to setup-phone`)
     return NextResponse.redirect(url)
   }
 
   // Allow invite paths and village creation through without village membership
   if (pathname.startsWith('/invite/') || pathname.startsWith('/villages/new')) {
-    console.log(`[MW] -> allowing invite/new village path: ${pathname}`)
     return supabaseResponse
   }
 
@@ -86,12 +77,9 @@ export async function middleware(request: NextRequest) {
     .select('id', { count: 'exact', head: true })
     .eq('user_id', user.id)
 
-  console.log(`[MW] village_count=${count}`)
-
   if (count === 0) {
     const url = request.nextUrl.clone()
     url.pathname = '/villages/new'
-    console.log(`[MW] -> no villages, redirecting to /villages/new`)
     return NextResponse.redirect(url)
   }
 

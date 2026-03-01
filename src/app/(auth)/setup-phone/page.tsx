@@ -41,7 +41,6 @@ function SetupPhoneForm() {
   const paramRedirect = searchParams.get("redirect");
   const storageRedirect = getRedirectFromStorage();
   const redirectTo = paramRedirect || storageRedirect;
-  console.log(`[SETUP-PHONE] paramRedirect=${paramRedirect}, storageRedirect=${storageRedirect}, final redirectTo=${redirectTo}`);
 
   const [phone, setPhone] = useState("");
   const [code, setCode] = useState("");

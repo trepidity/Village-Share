@@ -3,7 +3,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { acceptVillageInvite } from "@/lib/invites/accept";
-import { debugLog } from "@/lib/debug-log";
 import {
   Card,
   CardContent,
@@ -52,7 +51,6 @@ export default async function InvitePage({
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  debugLog("INVITE", `Page loaded with token: ${token}`);
   const supabase = await createClient();
   const admin = createAdminClient();
 
@@ -63,10 +61,7 @@ export default async function InvitePage({
     .eq("token", token)
     .single();
 
-  debugLog("INVITE", `Invite lookup: found=${!!invite}, error=${inviteError?.message ?? 'none'}, accepted_at=${invite?.accepted_at ?? 'null'}, expires_at=${invite?.expires_at ?? 'null'}`);
-
   if (!invite) {
-    debugLog("INVITE", `-> invite not found, returning 404`);
     notFound();
   }
 
@@ -124,18 +119,11 @@ export default async function InvitePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  debugLog("INVITE", `Auth check: user=${user?.id ?? 'NONE'}`);
-
   if (user) {
-    debugLog("INVITE", `Attempting auto-accept for user ${user.id} with token ${token}`);
     const result = await acceptVillageInvite(token, user.id);
-    debugLog("INVITE", `Auto-accept result: success=${result.success}, villageId=${result.villageId}, error=${result.error}`);
     if (result.success) {
-      debugLog("INVITE", `-> redirecting to /villages/${result.villageId}`);
       redirect(`/villages/${result.villageId}`);
     }
-    debugLog("INVITE", `-> auto-accept failed, falling through to display page`);
-    // If acceptance failed, fall through to show the invite page with error
   }
 
   // Use admin client to bypass RLS — unauthenticated users need to see village details
