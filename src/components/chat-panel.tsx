@@ -17,8 +17,19 @@ interface SessionState {
   lastIntent: unknown
 }
 
-const GREETING =
-  "Welcome to VillageShare! Type HELP for a list of commands, or just tell me what you need."
+const GREETING = `Welcome to VillageShare!
+
+Here are some things you can do:
+
+BORROW [item] - borrow an item
+RETURN [item] - return an item
+SEARCH [term] - find items
+WHERE IS [item] - find an item's location
+RESERVE [item] for [date] - book ahead
+STATUS - see your active borrows
+CANCEL [item] - cancel a reservation
+
+You can also just ask me anything in plain English — I'll do my best to understand what you need.`
 
 export function ChatPanel() {
   const [messages, setMessages] = useState<Message[]>([
@@ -41,6 +52,16 @@ export function ChatPanel() {
       behavior: "smooth",
     })
   }, [messages])
+
+  // Keep input visible when mobile keyboard opens
+  useEffect(() => {
+    const handleResize = () => {
+      // visualViewport shrinks when keyboard opens; scroll input into view
+      inputRef.current?.scrollIntoView({ block: "nearest" })
+    }
+    window.visualViewport?.addEventListener("resize", handleResize)
+    return () => window.visualViewport?.removeEventListener("resize", handleResize)
+  }, [])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -97,11 +118,11 @@ export function ChatPanel() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)] md:h-[calc(100vh-6rem)] max-w-2xl mx-auto">
+    <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[calc(100dvh-6rem)] max-w-2xl mx-auto">
       {/* Messages area */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto space-y-3 py-4 px-1"
+        className="flex-1 min-h-0 overflow-y-auto space-y-3 py-4 px-1"
       >
         {messages.map((msg) => (
           <div
@@ -133,10 +154,10 @@ export function ChatPanel() {
         )}
       </div>
 
-      {/* Input area */}
+      {/* Input area — sticky with safe-area padding for mobile keyboards */}
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-2 border-t pt-3 pb-1"
+        className="flex items-center gap-2 border-t pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))] shrink-0 bg-background"
       >
         <Input
           ref={inputRef}
