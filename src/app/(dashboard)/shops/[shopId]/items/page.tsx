@@ -178,6 +178,7 @@ export default function ItemsPage({
       } else {
         const { error: insertError } = await supabase.from("items").insert({
           shop_id: shopId,
+          location_shop_id: shopId,
           name: values.name,
           description: values.description || null,
           category: values.category || null,
