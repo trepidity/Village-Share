@@ -15,9 +15,12 @@ export const templates = {
       'RETURN [item] at [shop] - return to a different location',
       'SEARCH [term] - find items',
       'WHERE IS [item] - find an item\'s location',
+      'WHO HAS [item] - see who borrowed it',
       'RESERVE [item] for [date] - book ahead',
       'STATUS - see your borrows',
       'CANCEL [item] - cancel reservation',
+      'ADD [item] - add an item to your shop',
+      'REMOVE [item] - remove an item from your shop',
     ].join('\n'),
 
   unknownUser: (appUrl: string) =>
@@ -133,6 +136,57 @@ export const templates = {
 
   availabilityNone: (itemName: string) =>
     `I couldn't find "${itemName}" in any of your shops. Text SEARCH to see what's available.`,
+
+  // WHO_HAS templates
+  whoHasBorrower: (itemName: string, borrowerName: string, borrowerPhone?: string, dueAt?: string) => {
+    let msg = `The ${itemName} is borrowed by ${borrowerName}`
+    if (borrowerPhone) msg += ` (${borrowerPhone})`
+    msg += '.'
+    if (dueAt) msg += ` Due back ${dueAt}.`
+    return msg
+  },
+
+  whoHasNobody: (itemName: string) =>
+    `The ${itemName} isn't currently borrowed. It's available!`,
+
+  whoHasMultiple: (itemName: string, results: Array<{ shopName: string; borrowerName?: string; borrowerPhone?: string; dueAt?: string }>) => {
+    const header = `${itemName} across your shops:`
+    const lines = results.slice(0, 6).map((r) => {
+      if (r.borrowerName) {
+        const phone = r.borrowerPhone ? ` (${r.borrowerPhone})` : ''
+        const due = r.dueAt ? `, due ${r.dueAt}` : ''
+        return `- ${r.shopName}: borrowed by ${r.borrowerName}${phone}${due}`
+      }
+      return `- ${r.shopName}: available`
+    })
+    return [header, ...lines].join('\n')
+  },
+
+  // ADD_ITEM templates
+  addItemConfirm: (itemName: string, shopName: string) =>
+    `Done! Added "${itemName}" to ${shopName}. It's marked as available.`,
+
+  addItemDuplicate: (itemName: string, shopName: string) =>
+    `There's already an item called "${itemName}" in ${shopName}.`,
+
+  addItemNotOwner: () =>
+    'Only shop owners can add items. Ask the owner to add it, or manage items in the app.',
+
+  addItemPrompt: () =>
+    'What item do you want to add? Text ADD [item name].',
+
+  // REMOVE_ITEM templates
+  removeItemConfirm: (itemName: string, shopName: string) =>
+    `Done! Removed "${itemName}" from ${shopName}.`,
+
+  removeItemBorrowed: (itemName: string) =>
+    `Can't remove the ${itemName} — it's currently borrowed. It needs to be returned first.`,
+
+  removeItemNotOwner: () =>
+    'Only shop owners can remove items.',
+
+  removeItemPrompt: () =>
+    'What item do you want to remove? Text REMOVE [item name].',
 
   noActiveShop: () =>
     "You're not part of a village yet. Ask someone for an invite link, or visit the app to create your own village.",

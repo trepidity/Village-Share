@@ -10,6 +10,9 @@ import { handleStatus } from '@/lib/sms/handlers/status'
 import { handleReserve } from '@/lib/sms/handlers/reserve'
 import { handleCancel } from '@/lib/sms/handlers/cancel'
 import { handleAvailability } from '@/lib/sms/handlers/availability'
+import { handleWhoHas } from '@/lib/sms/handlers/who-has'
+import { handleAddItem } from '@/lib/sms/handlers/add-item'
+import { handleRemoveItem } from '@/lib/sms/handlers/remove-item'
 
 export interface AwaitingChoice {
   options?: Array<{ id: string; name: string }>
@@ -37,6 +40,8 @@ const SHOP_REQUIRED_INTENTS = new Set([
   'RETURN',
   'SEARCH',
   'RESERVE',
+  'ADD_ITEM',
+  'REMOVE_ITEM',
 ])
 
 /**
@@ -129,6 +134,23 @@ export async function routeIntent(
       case 'AVAILABILITY':
         return await handleAvailability(intent, {
           userId: context.userId,
+        })
+
+      case 'WHO_HAS':
+        return await handleWhoHas(intent, {
+          userId: context.userId,
+        })
+
+      case 'ADD_ITEM':
+        return await handleAddItem(intent, {
+          userId: context.userId,
+          shopId: shopId!,
+        })
+
+      case 'REMOVE_ITEM':
+        return await handleRemoveItem(intent, {
+          userId: context.userId,
+          shopId: shopId!,
         })
 
       case 'CANCEL':

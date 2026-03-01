@@ -25,9 +25,12 @@ BORROW [item] - borrow an item
 RETURN [item] - return an item
 SEARCH [term] - find items
 WHERE IS [item] - find an item's location
+WHO HAS [item] - see who borrowed it
 RESERVE [item] for [date] - book ahead
 STATUS - see your active borrows
 CANCEL [item] - cancel a reservation
+ADD [item] - add an item to your shop
+REMOVE [item] - remove an item from your shop
 
 You can also just ask me anything in plain English — I'll do my best to understand what you need.`
 

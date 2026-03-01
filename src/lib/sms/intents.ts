@@ -7,6 +7,9 @@ export type IntentType =
   | 'HELP'
   | 'CANCEL'
   | 'AVAILABILITY'
+  | 'WHO_HAS'
+  | 'ADD_ITEM'
+  | 'REMOVE_ITEM'
   | 'UNKNOWN'
 
 export interface ParsedIntent {

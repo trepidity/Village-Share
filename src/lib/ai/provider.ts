@@ -18,6 +18,10 @@ const VALID_INTENTS = new Set<IntentType>([
   'STATUS',
   'HELP',
   'CANCEL',
+  'AVAILABILITY',
+  'WHO_HAS',
+  'ADD_ITEM',
+  'REMOVE_ITEM',
   'UNKNOWN',
 ])
 

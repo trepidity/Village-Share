@@ -58,10 +58,28 @@ export function parseMessage(message: string): ParsedIntent {
     return { ...borrowResult, raw }
   }
 
+  // --- WHO_HAS ---
+  const whoHasResult = matchWhoHas(lower)
+  if (whoHasResult) {
+    return { ...whoHasResult, raw }
+  }
+
   // --- AVAILABILITY ---
   const availabilityResult = matchAvailability(lower)
   if (availabilityResult) {
     return { ...availabilityResult, raw }
+  }
+
+  // --- ADD_ITEM ---
+  const addItemResult = matchAddItem(lower)
+  if (addItemResult) {
+    return { ...addItemResult, raw }
+  }
+
+  // --- REMOVE_ITEM ---
+  const removeItemResult = matchRemoveItem(lower)
+  if (removeItemResult) {
+    return { ...removeItemResult, raw }
   }
 
   // --- SEARCH ---
@@ -295,30 +313,6 @@ function matchAvailability(
     return { type: 'AVAILABILITY', confidence: 0.9, entities }
   }
 
-  // "who has [item]?", "who's got [item]?", "who's using [item]?"
-  const whoHas = lower.match(
-    /^who(?:'s|s| is)?\s+(?:has|got|using|borrowing)\s+(?:the\s+|a\s+)?(.+?)\??$/
-  )
-  if (whoHas) {
-    return {
-      type: 'AVAILABILITY',
-      confidence: 0.9,
-      entities: { itemName: cleanEntity(whoHas[1]) },
-    }
-  }
-
-  // "is anyone using [item]?"
-  const anyoneUsing = lower.match(
-    /^is\s+(?:anyone|someone|somebody)\s+(?:using|borrowing)\s+(?:the\s+)?(.+?)\??$/
-  )
-  if (anyoneUsing) {
-    return {
-      type: 'AVAILABILITY',
-      confidence: 0.9,
-      entities: { itemName: cleanEntity(anyoneUsing[1]) },
-    }
-  }
-
   // "when is [item] available/free?"
   const whenAvail = lower.match(
     /^when\s+is\s+(?:the\s+)?(.+?)\s+(?:available|free)\??$/
@@ -352,6 +346,147 @@ function matchAvailability(
       confidence: 0.9,
       entities: { itemName: cleanEntity(whereFind[1]) },
     }
+  }
+
+  return null
+}
+
+function matchWhoHas(
+  lower: string
+): Omit<ParsedIntent, 'raw'> | null {
+  // "who has [item]?", "who's got [item]?", "who's using [item]?"
+  const whoHas = lower.match(
+    /^who(?:'s|s| is)?\s+(?:has|got|using|borrowing)\s+(?:the\s+|a\s+|my\s+)?(.+?)\??$/
+  )
+  if (whoHas) {
+    return {
+      type: 'WHO_HAS',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(whoHas[1]) },
+    }
+  }
+
+  // "who borrowed [item]?"
+  const whoBorrowed = lower.match(
+    /^who\s+borrowed\s+(?:the\s+|a\s+|my\s+)?(.+?)\??$/
+  )
+  if (whoBorrowed) {
+    return {
+      type: 'WHO_HAS',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(whoBorrowed[1]) },
+    }
+  }
+
+  // "is anyone using [item]?"
+  const anyoneUsing = lower.match(
+    /^is\s+(?:anyone|someone|somebody)\s+(?:using|borrowing)\s+(?:the\s+|my\s+)?(.+?)\??$/
+  )
+  if (anyoneUsing) {
+    return {
+      type: 'WHO_HAS',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(anyoneUsing[1]) },
+    }
+  }
+
+  // "does anyone have [item]?"
+  const doesAnyone = lower.match(
+    /^does\s+(?:anyone|someone|somebody)\s+have\s+(?:the\s+|my\s+)?(.+?)\??$/
+  )
+  if (doesAnyone) {
+    return {
+      type: 'WHO_HAS',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(doesAnyone[1]) },
+    }
+  }
+
+  return null
+}
+
+function matchAddItem(
+  lower: string
+): Omit<ParsedIntent, 'raw'> | null {
+  // "add [item] to [shop]"
+  const addToShop = lower.match(
+    /^(?:add|create)\s+(?:a\s+|the\s+)?(.+?)\s+to\s+(.+?)(?:'s?\s+shop)?$/
+  )
+  if (addToShop) {
+    return {
+      type: 'ADD_ITEM',
+      confidence: 0.9,
+      entities: {
+        itemName: cleanEntity(addToShop[1]),
+        shopName: cleanEntity(addToShop[2]),
+      },
+    }
+  }
+
+  // "add [item]" / "create [item]" / "new item [name]"
+  const addSimple = lower.match(
+    /^(?:add|create)\s+(?:a\s+|the\s+)?(.+?)$/
+  )
+  if (addSimple) {
+    return {
+      type: 'ADD_ITEM',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(addSimple[1]) },
+    }
+  }
+
+  const newItem = lower.match(
+    /^new\s+item\s+(.+?)$/
+  )
+  if (newItem) {
+    return {
+      type: 'ADD_ITEM',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(newItem[1]) },
+    }
+  }
+
+  // Bare "add" keyword
+  if (/^add$/.test(lower)) {
+    return { type: 'ADD_ITEM', confidence: 1.0, entities: {} }
+  }
+
+  return null
+}
+
+function matchRemoveItem(
+  lower: string
+): Omit<ParsedIntent, 'raw'> | null {
+  // "remove [item] from [shop]" / "delete [item] from [shop]"
+  const removeFromShop = lower.match(
+    /^(?:remove|delete)\s+(?:the\s+|a\s+)?(.+?)\s+from\s+(.+?)(?:'s?\s+shop)?$/
+  )
+  if (removeFromShop) {
+    return {
+      type: 'REMOVE_ITEM',
+      confidence: 0.9,
+      entities: {
+        itemName: cleanEntity(removeFromShop[1]),
+        shopName: cleanEntity(removeFromShop[2]),
+      },
+    }
+  }
+
+  // "remove [item]" / "delete [item]"
+  const removeSimple = lower.match(
+    /^(?:remove|delete)\s+(?:the\s+|a\s+)?(.+?)$/
+  )
+  if (removeSimple) {
+    return {
+      type: 'REMOVE_ITEM',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(removeSimple[1]) },
+    }
+  }
+
+  // Bare "remove" keyword
+  if (/^(?:remove|delete)$/.test(lower)) {
+    return { type: 'REMOVE_ITEM', confidence: 1.0, entities: {} }
   }
 
   return null

@@ -10,7 +10,7 @@ Your job is to convert a user's SMS message into a structured JSON command.
 Output ONLY valid JSON with this exact schema (no markdown, no code fences):
 
 {
-  "intent": "BORROW" | "RETURN" | "SEARCH" | "RESERVE" | "AVAILABILITY" | "STATUS" | "HELP" | "CANCEL" | "UNKNOWN",
+  "intent": "BORROW" | "RETURN" | "SEARCH" | "RESERVE" | "AVAILABILITY" | "WHO_HAS" | "ADD_ITEM" | "REMOVE_ITEM" | "STATUS" | "HELP" | "CANCEL" | "UNKNOWN",
   "entities": {
     "itemName": "string or null",
     "shopName": "string or null",
@@ -29,6 +29,9 @@ Intent definitions:
 - HELP: The user wants instructions or a list of commands. Examples: "help", "how does this work", "commands"
 - AVAILABILITY: The user wants to check if an item is available or in use. Examples: "is the drill available?", "is anyone using the mower?", "is the trailer free this weekend?", "when is the saw available?"
 - CANCEL: The user wants to cancel a reservation or pending request. Examples: "cancel my reservation", "cancel the drill booking", "nevermind"
+- WHO_HAS: The user wants to know who currently has or borrowed a specific item. Examples: "who has the drill?", "who borrowed the ladder?", "does anyone have the pressure washer?"
+- ADD_ITEM: The user wants to add a new item to their shop/inventory. Examples: "add a chainsaw", "add ladder to Mike's shop", "new item circular saw"
+- REMOVE_ITEM: The user wants to remove or delete an item from their shop. Examples: "remove the chainsaw", "delete the ladder from my shop"
 - UNKNOWN: The message does not clearly map to any of the above.
 
 Rules:
