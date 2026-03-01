@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { use } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -82,17 +82,19 @@ export default function ItemsPage({
 }) {
   const { shopId } = use(params);
   const searchParams = useSearchParams();
+  const router = useRouter();
   const supabase = createClient();
 
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
-  const [addOpen, setAddOpen] = useState(searchParams.get("add") === "true");
+  const [addOpen, setAddOpen] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const urlParamsHandled = useRef(false);
 
   const form = useForm<ItemFormValues>({
     resolver: zodResolver(itemSchema),
@@ -112,6 +114,33 @@ export default function ItemsPage({
   useEffect(() => {
     fetchItems();
   }, [fetchItems]);
+
+  // Handle ?add=true and ?edit={id} URL params once after items load
+  useEffect(() => {
+    if (urlParamsHandled.current) return;
+    const addParam = searchParams.get("add");
+    const editParam = searchParams.get("edit");
+
+    if (addParam === "true") {
+      setAddOpen(true);
+      urlParamsHandled.current = true;
+      router.replace(`/shops/${shopId}/items`, { scroll: false });
+    } else if (editParam && items.length > 0) {
+      const item = items.find((i) => i.id === editParam);
+      if (item) {
+        setEditItem(item);
+        form.reset({
+          name: item.name,
+          description: item.description ?? "",
+          category: item.category ?? "",
+        });
+        setPhotoPreview(item.photo_url);
+        setPhotoFile(null);
+      }
+      urlParamsHandled.current = true;
+      router.replace(`/shops/${shopId}/items`, { scroll: false });
+    }
+  }, [searchParams, items, shopId, router, form]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -152,7 +181,7 @@ export default function ItemsPage({
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
-  const onSubmit = async (values: ItemFormValues) => {
+  const onAddSubmit = async (values: ItemFormValues) => {
     setError("");
     setUploading(true);
 
@@ -162,35 +191,53 @@ export default function ItemsPage({
         photoUrl = await uploadPhoto();
       }
 
-      if (editItem) {
-        const updateData: Database["public"]["Tables"]["items"]["Update"] = {
-          name: values.name,
-          description: values.description || null,
-          category: values.category || null,
-        };
-        if (photoUrl) updateData.photo_url = photoUrl;
+      const { error: insertError } = await supabase.from("items").insert({
+        shop_id: shopId,
+        location_shop_id: shopId,
+        name: values.name,
+        description: values.description || null,
+        category: values.category || null,
+        photo_url: photoUrl,
+      });
 
-        const { error: updateError } = await supabase
-          .from("items")
-          .update(updateData)
-          .eq("id", editItem.id);
+      if (insertError) throw new Error(insertError.message);
 
-        if (updateError) throw new Error(updateError.message);
-        setEditItem(null);
-      } else {
-        const { error: insertError } = await supabase.from("items").insert({
-          shop_id: shopId,
-          location_shop_id: shopId,
-          name: values.name,
-          description: values.description || null,
-          category: values.category || null,
-          photo_url: photoUrl,
-        });
+      setAddOpen(false);
+      resetFormState();
+      await fetchItems();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setUploading(false);
+    }
+  };
 
-        if (insertError) throw new Error(insertError.message);
-        setAddOpen(false);
+  const onEditSubmit = async (values: ItemFormValues) => {
+    if (!editItem) return;
+    setError("");
+    setUploading(true);
+
+    try {
+      let photoUrl: string | null = null;
+      if (photoFile) {
+        photoUrl = await uploadPhoto();
       }
 
+      const updateData: Database["public"]["Tables"]["items"]["Update"] = {
+        name: values.name,
+        description: values.description || null,
+        category: values.category || null,
+      };
+      if (photoUrl) updateData.photo_url = photoUrl;
+
+      const { error: updateError } = await supabase
+        .from("items")
+        .update(updateData)
+        .eq("id", editItem.id);
+
+      if (updateError) throw new Error(updateError.message);
+
+      setEditItem(null);
       resetFormState();
       await fetchItems();
     } catch (err) {
@@ -225,108 +272,8 @@ export default function ItemsPage({
     });
     setPhotoPreview(item.photo_url);
     setPhotoFile(null);
+    setError("");
   };
-
-  const ItemFormContent = () => (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        {error && <p className="text-sm text-destructive">{error}</p>}
-
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Item Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Cordless Drill" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="description"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Description</FormLabel>
-              <FormControl>
-                <Textarea
-                  placeholder="Brief description of the item..."
-                  rows={3}
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Category</FormLabel>
-              <FormControl>
-                <Input placeholder="Tools, Kitchen, Garden..." {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {/* Photo upload */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium">Photo</label>
-          <div className="flex items-center gap-4">
-            {photoPreview ? (
-              <div className="relative size-20 overflow-hidden rounded-md border">
-                <Image
-                  src={photoPreview}
-                  alt="Preview"
-                  fill
-                  unoptimized
-                  className="object-cover"
-                />
-              </div>
-            ) : (
-              <div className="flex size-20 items-center justify-center rounded-md border bg-muted">
-                <ImageIcon className="size-8 text-muted-foreground" />
-              </div>
-            )}
-            <div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Upload className="size-4" />
-                {photoPreview ? "Change Photo" : "Upload Photo"}
-              </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                className="hidden"
-                onChange={handlePhotoChange}
-              />
-            </div>
-          </div>
-        </div>
-
-        <DialogFooter>
-          <Button type="submit" disabled={uploading}>
-            {uploading && <Loader2 className="size-4 animate-spin" />}
-            {editItem ? "Save Changes" : "Add Item"}
-          </Button>
-        </DialogFooter>
-      </form>
-    </Form>
-  );
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 p-6">
@@ -358,7 +305,77 @@ export default function ItemsPage({
                 Add an item to your shop for community members to borrow.
               </DialogDescription>
             </DialogHeader>
-            <ItemFormContent />
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onAddSubmit)} className="space-y-4">
+                {error && <p className="text-sm text-destructive">{error}</p>}
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Item Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Cordless Drill" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Description</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Brief description of the item..." rows={3} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="category"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Category</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Tools, Kitchen, Garden..." {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">Photo</label>
+                  <div className="flex items-center gap-4">
+                    {photoPreview ? (
+                      <div className="relative size-20 overflow-hidden rounded-md border">
+                        <Image src={photoPreview} alt="Preview" fill unoptimized className="object-cover" />
+                      </div>
+                    ) : (
+                      <div className="flex size-20 items-center justify-center rounded-md border bg-muted">
+                        <ImageIcon className="size-8 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div>
+                      <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                        <Upload className="size-4" />
+                        {photoPreview ? "Change Photo" : "Upload Photo"}
+                      </Button>
+                      <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                    </div>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button type="submit" disabled={uploading}>
+                    {uploading && <Loader2 className="size-4 animate-spin" />}
+                    Add Item
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
@@ -380,7 +397,77 @@ export default function ItemsPage({
               Update the details for this item.
             </DialogDescription>
           </DialogHeader>
-          <ItemFormContent />
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onEditSubmit)} className="space-y-4">
+              {error && <p className="text-sm text-destructive">{error}</p>}
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Item Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Cordless Drill" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Brief description of the item..." rows={3} {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Category</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Tools, Kitchen, Garden..." {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Photo</label>
+                <div className="flex items-center gap-4">
+                  {photoPreview ? (
+                    <div className="relative size-20 overflow-hidden rounded-md border">
+                      <Image src={photoPreview} alt="Preview" fill unoptimized className="object-cover" />
+                    </div>
+                  ) : (
+                    <div className="flex size-20 items-center justify-center rounded-md border bg-muted">
+                      <ImageIcon className="size-8 text-muted-foreground" />
+                    </div>
+                  )}
+                  <div>
+                    <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()}>
+                      <Upload className="size-4" />
+                      {photoPreview ? "Change Photo" : "Upload Photo"}
+                    </Button>
+                    <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoChange} />
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={uploading}>
+                  {uploading && <Loader2 className="size-4 animate-spin" />}
+                  Save Changes
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 

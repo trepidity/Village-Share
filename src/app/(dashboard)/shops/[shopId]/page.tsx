@@ -19,6 +19,7 @@ import {
   Plus,
   ArrowLeft,
   ImageIcon,
+  Pencil,
 } from "lucide-react";
 import type { ItemStatus } from "@/lib/supabase/types";
 
@@ -205,12 +206,21 @@ export default async function ShopDetailPage({
                     </Badge>
                   </div>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-base">{item.name}</CardTitle>
-                    {item.category && (
-                      <Badge variant="outline" className="w-fit">
-                        {item.category}
-                      </Badge>
-                    )}
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <CardTitle className="text-base">{item.name}</CardTitle>
+                        {item.category && (
+                          <Badge variant="outline" className="mt-1 w-fit">
+                            {item.category}
+                          </Badge>
+                        )}
+                      </div>
+                      <Button variant="ghost" size="icon-xs" asChild>
+                        <Link href={`/shops/${shopId}/items?edit=${item.id}`}>
+                          <Pencil className="size-3" />
+                        </Link>
+                      </Button>
+                    </div>
                   </CardHeader>
                   {item.description && (
                     <CardContent className="pt-0">
