@@ -4,6 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendInviteEmail } from "@/lib/email/send-invite";
 import { sendSms } from "@/lib/twilio/send-sms";
 import { inviteSms } from "@/lib/sms/invite-template";
+import { normalizePhone } from "@/lib/utils/phone";
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -81,10 +82,12 @@ export async function POST(request: NextRequest) {
   const expiresAt = new Date();
   expiresAt.setDate(expiresAt.getDate() + 7);
 
+  const normalizedPhone = phone ? normalizePhone(phone) : null;
+
   const { error: insertError } = await admin.from("shop_invites").insert({
     shop_id: shopId,
     invited_by: user.id,
-    ...(email ? { email } : { phone }),
+    ...(email ? { email } : { phone: normalizedPhone }),
     token,
     role,
     expires_at: expiresAt.toISOString(),
