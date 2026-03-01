@@ -99,6 +99,8 @@ export default function VillageMembersPage({
   const [invitePhone, setInvitePhone] = useState("");
   const [sendingPhone, setSendingPhone] = useState(false);
   const [smsSent, setSmsSent] = useState(false);
+  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   const fetchData = useCallback(async () => {
     const {
@@ -166,8 +168,11 @@ export default function VillageMembersPage({
 
       if (insertError) throw new Error(insertError.message);
 
-      setInviteOpen(false);
-      setInviteRole("member");
+      const link = `${window.location.origin}/invite/${token}`;
+      setGeneratedLink(link);
+      setLinkCopied(true);
+      await navigator.clipboard.writeText(link);
+      setTimeout(() => setLinkCopied(false), 2000);
       await fetchData();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to create invite");
@@ -318,6 +323,8 @@ export default function VillageMembersPage({
                 setInviteEmail("");
                 setSmsSent(false);
                 setInvitePhone("");
+                setGeneratedLink(null);
+                setLinkCopied(false);
               }
             }}>
             <DialogTrigger asChild>
@@ -366,7 +373,7 @@ export default function VillageMembersPage({
                 </div>
               </div>
 
-              <Tabs defaultValue="email" className="w-full">
+              <Tabs defaultValue="email" className="w-full min-w-0">
                 <TabsList className="w-full">
                   <TabsTrigger value="email" className="flex-1">
                     <Mail className="mr-1 size-3.5" />
@@ -425,7 +432,7 @@ export default function VillageMembersPage({
                     Send SMS Invite
                   </Button>
                 </TabsContent>
-                <TabsContent value="link">
+                <TabsContent value="link" className="space-y-4">
                   <Button
                     onClick={createInvite}
                     disabled={creating}
@@ -435,8 +442,36 @@ export default function VillageMembersPage({
                       <Loader2 className="size-4 animate-spin" />
                     )}
                     <Link2 className="size-4" />
-                    Generate Invite Link
+                    {generatedLink ? "Generate Another Link" : "Generate Invite Link"}
                   </Button>
+                  {generatedLink && (
+                    <div className="space-y-2 overflow-hidden">
+                      <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-2 overflow-hidden">
+                        <p className="flex-1 text-sm font-mono truncate overflow-hidden">
+                          {generatedLink}
+                        </p>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="shrink-0"
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(generatedLink);
+                            setLinkCopied(true);
+                            setTimeout(() => setLinkCopied(false), 2000);
+                          }}
+                        >
+                          {linkCopied ? (
+                            <Check className="size-4 text-green-600" />
+                          ) : (
+                            <Copy className="size-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {linkCopied ? "Copied to clipboard!" : "Link copied to clipboard. Share it with anyone you want to invite."}
+                      </p>
+                    </div>
+                  )}
                 </TabsContent>
               </Tabs>
             </DialogContent>
