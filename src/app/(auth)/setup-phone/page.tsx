@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +13,6 @@ export default function SetupPhonePage() {
   const [step, setStep] = useState<"phone" | "verify">("phone");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const router = useRouter();
-
   const sendVerification = async () => {
     setLoading(true);
     setError("");
@@ -50,15 +47,17 @@ export default function SetupPhonePage() {
       // Update profile with verified phone
       const sb = createClient();
       const { data: { user } } = await sb.auth.getUser();
-      if (user) {
-        await sb.from("profiles").update({
-          phone: data.phone,
-          phone_verified: true,
-        }).eq("id", user.id);
-      }
+      if (!user) throw new Error("Not authenticated");
 
-      router.push("/");
-      router.refresh();
+      const { error: updateError } = await sb.from("profiles").update({
+        phone: data.phone,
+        phone_verified: true,
+      }).eq("id", user.id);
+
+      if (updateError) throw new Error(updateError.message);
+
+      // Hard redirect to ensure fresh server-side session
+      window.location.href = "/";
     } catch (err) {
       setError(err instanceof Error ? err.message : "Verification failed");
     } finally {
