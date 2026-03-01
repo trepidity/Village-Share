@@ -296,6 +296,36 @@ describe('SMS Parser', () => {
       expect(result.type).toBe('AVAILABILITY')
       expect(result.entities.itemName).toBe('mower')
     })
+
+    it('matches "where is the small chainsaw at?"', () => {
+      const result = parseMessage('where is the small chainsaw at?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('small chainsaw')
+    })
+
+    it('matches "where is the drill?"', () => {
+      const result = parseMessage('where is the drill?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('drill')
+    })
+
+    it('matches "where\'s the saw?"', () => {
+      const result = parseMessage("where's the saw?")
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('saw')
+    })
+
+    it('matches "where can I find the ladder?"', () => {
+      const result = parseMessage('where can I find the ladder?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('ladder')
+    })
+
+    it('matches "where do I get the trailer?"', () => {
+      const result = parseMessage('where do I get the trailer?')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('trailer')
+    })
   })
 
   describe('Disambiguation (number choices)', () => {

@@ -331,6 +331,29 @@ function matchAvailability(
     }
   }
 
+  // "where is [item]?", "where's the [item] at?", "where can I find [item]?"
+  const whereIs = lower.match(
+    /^where(?:'s| is)\s+(?:the\s+)?(.+?)(?:\s+at)?\??$/
+  )
+  if (whereIs) {
+    return {
+      type: 'AVAILABILITY',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(whereIs[1]) },
+    }
+  }
+
+  const whereFind = lower.match(
+    /^where\s+(?:can|do)\s+i\s+(?:find|get|pick up)\s+(?:the\s+|a\s+)?(.+?)\??$/
+  )
+  if (whereFind) {
+    return {
+      type: 'AVAILABILITY',
+      confidence: 0.9,
+      entities: { itemName: cleanEntity(whereFind[1]) },
+    }
+  }
+
   return null
 }
 
