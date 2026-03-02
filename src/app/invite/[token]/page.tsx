@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, CheckCircle, Clock, Home, UserPlus } from "lucide-react";
+import { AlertCircle, Clock, Home, UserPlus } from "lucide-react";
 import { InviteSignIn } from "@/components/invite-sign-in";
 import type { VillageRole } from "@/lib/supabase/types";
 
@@ -39,10 +39,10 @@ async function acceptInvite(formData: FormData) {
   const result = await acceptVillageInvite(token, user.id);
 
   if (!result.success) {
-    redirect("/");
+    redirect("/chat");
   }
 
-  redirect(`/villages/${result.villageId}`);
+  redirect("/chat");
 }
 
 export default async function InvitePage({
@@ -63,30 +63,6 @@ export default async function InvitePage({
 
   if (!invite) {
     notFound();
-  }
-
-  // Check if already accepted
-  if (invite.accepted_at) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900">
-              <CheckCircle className="size-6 text-blue-600 dark:text-blue-400" />
-            </div>
-            <CardTitle>Invite Already Accepted</CardTitle>
-            <CardDescription>
-              This invite has already been used.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button asChild>
-              <a href={`/villages/${invite.village_id}`}>Go to Village</a>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
 
   // Check if expired
@@ -122,7 +98,7 @@ export default async function InvitePage({
   if (user) {
     const result = await acceptVillageInvite(token, user.id);
     if (result.success) {
-      redirect(`/villages/${result.villageId}`);
+      redirect("/chat");
     }
   }
 
