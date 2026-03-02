@@ -299,7 +299,7 @@ function matchAvailability(
 
   // "is [item] available/free/in use/being used?" with optional date
   const isAvail = lower.match(
-    /^is\s+(?:the\s+)?(.+?)\s+(?:available|free|in use|being used)(?:\s+(.+?))?\??$/
+    /^is\s+(?:the\s+|there\s+(?:a|an)\s+)?(.+?)\s+(?:available|free|in use|being used)(?:\s+(.+?))?\??$/
   )
   if (isAvail) {
     const entities: ParsedIntent['entities'] = {

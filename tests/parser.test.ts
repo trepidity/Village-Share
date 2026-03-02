@@ -267,6 +267,12 @@ describe('SMS Parser', () => {
       expect(result.entities.itemName).toBe('table saw')
     })
 
+    it('matches "is there a mower available"', () => {
+      const result = parseMessage('is there a mower available')
+      expect(result.type).toBe('AVAILABILITY')
+      expect(result.entities.itemName).toBe('mower')
+    })
+
     it('matches "is someone borrowing the ladder?"', () => {
       const result = parseMessage('is someone borrowing the ladder?')
       expect(result.type).toBe('WHO_HAS')
