@@ -35,12 +35,17 @@ export async function handleReserve(
       ? new Date(intent.entities.dateEnd)
       : new Date(startsAt.getTime() + 24 * 60 * 60 * 1000) // default 1 day
 
-    // Find the item by name (fuzzy match)
-    const { data: items, error: searchError } = await supabase
+    // Find the item by name (fuzzy match, all words in any order)
+    let itemQuery = supabase
       .from('items')
       .select('id, name, status')
       .eq('shop_id', context.shopId)
-      .ilike('name', `%${itemName}%`)
+
+    for (const word of itemName.split(/\s+/).filter(Boolean)) {
+      itemQuery = itemQuery.ilike('name', `%${word}%`)
+    }
+
+    const { data: items, error: searchError } = await itemQuery
 
     if (searchError) {
       console.error('Reserve search error:', searchError)

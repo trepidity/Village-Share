@@ -54,12 +54,18 @@ export async function handleWhoHas(
     const shopIds = shops.map((s) => s.id)
     const shopMap = new Map(shops.map((s) => [s.id, s.short_name]))
 
-    // Search for items by name across all shops
-    const { data: items, error: searchError } = await supabase
+    // Search for items by name across all shops (fuzzy: all words must match in any order)
+    let query = supabase
       .from('items')
       .select('id, name, shop_id')
       .in('shop_id', shopIds)
-      .ilike('name', `%${itemName}%`)
+
+    const words = itemName.split(/\s+/).filter(Boolean)
+    for (const word of words) {
+      query = query.ilike('name', `%${word}%`)
+    }
+
+    const { data: items, error: searchError } = await query
 
     if (searchError) {
       console.error('WHO_HAS search error:', searchError)

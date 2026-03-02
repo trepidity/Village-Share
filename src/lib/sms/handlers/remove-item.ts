@@ -39,12 +39,17 @@ export async function handleRemoveItem(
       return templates.removeItemNotOwner()
     }
 
-    // Search for item by name in this shop
-    const { data: items, error: searchError } = await supabase
+    // Search for item by name in this shop (all words must match in any order)
+    let itemQuery = supabase
       .from('items')
       .select('id, name, status')
       .eq('shop_id', context.shopId)
-      .ilike('name', `%${itemName}%`)
+
+    for (const word of itemName.split(/\s+/).filter(Boolean)) {
+      itemQuery = itemQuery.ilike('name', `%${word}%`)
+    }
+
+    const { data: items, error: searchError } = await itemQuery
 
     if (searchError) {
       console.error('REMOVE_ITEM search error:', searchError)

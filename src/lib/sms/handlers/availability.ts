@@ -54,12 +54,17 @@ export async function handleAvailability(
     const shopIds = shops.map((s) => s.id)
     const shopMap = new Map(shops.map((s) => [s.id, s.short_name]))
 
-    // Search for items across all shops
-    const { data: items, error: searchError } = await supabase
+    // Search for items across all shops (all words must match in any order)
+    let itemQuery = supabase
       .from('items')
       .select('id, name, status, shop_id, location_shop_id')
       .in('shop_id', shopIds)
-      .ilike('name', `%${itemName}%`)
+
+    for (const word of itemName.split(/\s+/).filter(Boolean)) {
+      itemQuery = itemQuery.ilike('name', `%${word}%`)
+    }
+
+    const { data: items, error: searchError } = await itemQuery
 
     if (searchError) {
       console.error('Availability search error:', searchError)

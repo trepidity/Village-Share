@@ -30,12 +30,18 @@ export async function handleSearch(
     const shopName = shop?.short_name ?? 'your shop'
 
     if (query) {
-      // Fuzzy search by item name
-      const { data: items, error } = await supabase
+      // Fuzzy search by item name (all words must match in any order)
+      let itemQuery = supabase
         .from('items')
         .select('id, name, status')
         .eq('shop_id', context.shopId)
-        .ilike('name', `%${query}%`)
+
+      const words = query.split(/\s+/).filter(Boolean)
+      for (const word of words) {
+        itemQuery = itemQuery.ilike('name', `%${word}%`)
+      }
+
+      const { data: items, error } = await itemQuery
 
       if (error) {
         console.error('Search error:', error)

@@ -24,12 +24,17 @@ export async function handleBorrow(
       return 'What item would you like to borrow? Text BORROW [item name].'
     }
 
-    // Fuzzy match items in the shop
-    const { data: items, error: searchError } = await supabase
+    // Fuzzy match items in the shop (all words must match in any order)
+    let itemQuery = supabase
       .from('items')
       .select('id, name, status, shop_id, location_shop_id')
       .eq('shop_id', context.shopId)
-      .ilike('name', `%${itemName}%`)
+
+    for (const word of itemName.split(/\s+/).filter(Boolean)) {
+      itemQuery = itemQuery.ilike('name', `%${word}%`)
+    }
+
+    const { data: items, error: searchError } = await itemQuery
 
     if (searchError) {
       console.error('Borrow search error:', searchError)
