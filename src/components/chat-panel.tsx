@@ -166,22 +166,28 @@ export function ChatPanel() {
       {/* Input area — sticky with safe-area padding for mobile keyboards */}
       <form
         onSubmit={handleSubmit}
+        autoComplete="off"
         className="flex items-center gap-2 border-t pt-3 pb-[max(0.25rem,env(safe-area-inset-bottom))] shrink-0 bg-background"
       >
         <Input
           ref={inputRef}
+          name="chat-msg-nofill"
+          type="search"
+          inputMode="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onBlur={refocusInput}
           placeholder="Type a message..."
           readOnly={isLoading}
           autoFocus
-          autoComplete="off"
+          autoComplete="one-time-code"
           autoCorrect="off"
           autoCapitalize="off"
           spellCheck={false}
           data-1p-ignore
           data-lpignore="true"
+          data-bwignore
+          data-protonpass-ignore="true"
           data-form-type="other"
         />
         <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
