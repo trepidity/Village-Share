@@ -238,8 +238,8 @@ function matchBorrow(
   // Possessive form: "borrow daniel's drill", "can i get mike's chainsaw"
   // Uses \w+ (single word) before 's to avoid matching article+noun like "the painter's tape"
   const possessivePatterns = [
-    /^(?:borrow|checkout|check out|rent|grab|pick up)\s+(\w+)'s\s+(.+?)$/,
-    /^(?:can i|could i|may i)\s+(?:borrow|get|use|have|rent)\s+(\w+)'s\s+(.+?)\??$/,
+    /^(?:borrow|barrow|checkout|check out|rent|grab|pick up)\s+(\w+)'s\s+(.+?)$/,
+    /^(?:can i|could i|may i)\s+(?:borrow|barrow|get|use|have|rent)\s+(\w+)'s\s+(.+?)\??$/,
   ]
 
   for (const pattern of possessivePatterns) {
@@ -258,8 +258,8 @@ function matchBorrow(
 
   // "from" form: "borrow the drill from daniel"
   const borrowPatterns = [
-    /^(?:borrow|checkout|check out|rent|grab|pick up)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?$/,
-    /^(?:can i|could i|may i)\s+(?:borrow|get|use|have|rent)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?\??$/,
+    /^(?:borrow|barrow|checkout|check out|rent|grab|pick up)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?$/,
+    /^(?:can i|could i|may i)\s+(?:borrow|barrow|get|use|have|rent)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?\??$/,
   ]
 
   for (const pattern of borrowPatterns) {

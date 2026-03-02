@@ -61,14 +61,23 @@ export async function routeIntent(
     // -----------------------------------------------------------------------
     // 1. Handle disambiguation follow-up
     // -----------------------------------------------------------------------
-    if (
-      context.lastIntent?.awaiting_choice &&
-      intent.entities.choiceIndex != null
-    ) {
-      return await resolveDisambiguation(
-        intent.entities.choiceIndex,
-        context
+    if (context.lastIntent?.awaiting_choice) {
+      // Numeric reply: "1", "2", etc.
+      if (intent.entities.choiceIndex != null) {
+        return await resolveDisambiguation(
+          intent.entities.choiceIndex,
+          context
+        )
+      }
+
+      // Text reply: try to match against the option names
+      const textMatch = resolveDisambiguationByName(
+        intent.raw,
+        context.lastIntent.awaiting_choice
       )
+      if (textMatch != null) {
+        return await resolveDisambiguation(textMatch, context)
+      }
     }
 
     // -----------------------------------------------------------------------
@@ -178,6 +187,30 @@ export async function routeIntent(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/**
+ * Try to match a text reply against disambiguation option names.
+ * Returns the 1-based index if exactly one option matches, null otherwise.
+ */
+function resolveDisambiguationByName(
+  raw: string,
+  awaiting: AwaitingChoice
+): number | null {
+  const options = awaiting.options ?? []
+  if (options.length === 0) return null
+
+  const input = raw.trim().toLowerCase()
+  if (!input) return null
+
+  const matches: number[] = []
+  for (let i = 0; i < options.length; i++) {
+    if (options[i].name.toLowerCase().includes(input)) {
+      matches.push(i + 1) // 1-based
+    }
+  }
+
+  return matches.length === 1 ? matches[0] : null
+}
 
 /**
  * Resolve a disambiguation choice.

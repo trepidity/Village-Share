@@ -74,6 +74,13 @@ describe('SMS Parser', () => {
       expect(result.entities.shopName).toBe('daniel')
     })
 
+    it('handles typo "barrow jared\'s 16\' trailer"', () => {
+      const result = parseMessage("barrow jared's 16' trailer")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.shopName).toBe('jared')
+      expect(result.entities.itemName).toBe("16' trailer")
+    })
+
     it('matches "checkout the table saw"', () => {
       const result = parseMessage('checkout the table saw')
       expect(result.type).toBe('BORROW')
