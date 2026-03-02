@@ -46,7 +46,7 @@ interface DashboardNavProps {
 const navLinks = [
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/villages", label: "My Villages", icon: Home },
-  { href: "/shops", label: "My Shops", icon: Store },
+  { href: "/collections", label: "My Collections", icon: Store },
   { href: "/borrows", label: "My Borrows", icon: BookOpen },
 ]
 
@@ -128,11 +128,11 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
             <Separator className="my-3" />
 
             <Link
-              href="/shops/new"
+              href="/collections/new"
               className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Create New Shop
+              Create New Collection
             </Link>
           </nav>
 
@@ -271,12 +271,12 @@ export function DashboardNav({ user, profile }: DashboardNavProps) {
             <Separator className="my-2" />
 
             <Link
-              href="/shops/new"
+              href="/collections/new"
               onClick={() => setMobileOpen(false)}
               className="flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-accent-foreground transition-colors"
             >
               <Plus className="h-4 w-4" />
-              Create New Shop
+              Create New Collection
             </Link>
           </nav>
         </div>

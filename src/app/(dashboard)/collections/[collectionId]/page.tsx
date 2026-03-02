@@ -22,6 +22,7 @@ import {
   Pencil,
 } from "lucide-react";
 import type { ItemStatus } from "@/lib/supabase/types";
+import { CollectionIcon } from "@/components/collection-icon";
 
 const statusConfig: Record<
   ItemStatus,
@@ -41,12 +42,12 @@ const statusConfig: Record<
   },
 };
 
-export default async function ShopDetailPage({
+export default async function CollectionDetailPage({
   params,
 }: {
-  params: Promise<{ shopId: string }>;
+  params: Promise<{ collectionId: string }>;
 }) {
-  const { shopId } = await params;
+  const { collectionId: shopId } = await params;
   const supabase = await createClient();
 
   const { data: shop, error } = await supabase
@@ -85,7 +86,10 @@ export default async function ShopDetailPage({
           </Link>
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold">{shop.name}</h1>
+          <div className="flex items-center gap-2">
+            <CollectionIcon type={shop.type} className="size-6 text-muted-foreground" />
+            <h1 className="text-2xl font-bold">{shop.name}</h1>
+          </div>
           {village && (
             <Link
               href={`/villages/${village.id}`}
@@ -168,9 +172,9 @@ export default async function ShopDetailPage({
         {/* Items tab */}
         <TabsContent value="items" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Shop Items</h2>
+            <h2 className="text-lg font-semibold">Items</h2>
             <Button asChild>
-              <Link href={`/shops/${shopId}/items?add=true`}>
+              <Link href={`/collections/${shopId}/items?add=true`}>
                 <Plus className="size-4" />
                 Add Item
               </Link>
@@ -186,7 +190,7 @@ export default async function ShopDetailPage({
                   Add your first item to start sharing with your community.
                 </CardDescription>
                 <Button className="mt-4" asChild>
-                  <Link href={`/shops/${shopId}/items?add=true`}>
+                  <Link href={`/collections/${shopId}/items?add=true`}>
                     <Plus className="size-4" />
                     Add Your First Item
                   </Link>
@@ -228,7 +232,7 @@ export default async function ShopDetailPage({
                         )}
                       </div>
                       <Button variant="ghost" size="icon-xs" asChild>
-                        <Link href={`/shops/${shopId}/items?edit=${item.id}`}>
+                        <Link href={`/collections/${shopId}/items?edit=${item.id}`}>
                           <Pencil className="size-3" />
                         </Link>
                       </Button>
@@ -265,7 +269,7 @@ export default async function ShopDetailPage({
               <Users className="mb-4 size-10 text-muted-foreground" />
               <p className="text-muted-foreground">
                 Members are managed at the village level. Anyone in the village
-                can access this shop.
+                can access this collection.
               </p>
               {village && (
                 <Button variant="outline" className="mt-4" asChild>
@@ -281,9 +285,9 @@ export default async function ShopDetailPage({
         {/* Settings tab */}
         <TabsContent value="settings" className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Shop Settings</h2>
+            <h2 className="text-lg font-semibold">Collection Settings</h2>
             <Button asChild>
-              <Link href={`/shops/${shopId}/settings`}>
+              <Link href={`/collections/${shopId}/settings`}>
                 <Settings className="size-4" />
                 Edit Settings
               </Link>
@@ -292,7 +296,7 @@ export default async function ShopDetailPage({
           <Card>
             <CardContent className="space-y-4 pt-0">
               <div>
-                <p className="text-sm font-medium">Shop Name</p>
+                <p className="text-sm font-medium">Collection Name</p>
                 <p className="text-muted-foreground">{shop.name}</p>
               </div>
               <div>

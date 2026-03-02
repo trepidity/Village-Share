@@ -98,6 +98,36 @@ describe('SMS Parser', () => {
       expect(result.type).toBe('BORROW')
       expect(result.entities.itemName).toBe('table saw')
     })
+
+    it('extracts shopName from "borrow drill from John\'s kitchen"', () => {
+      const result = parseMessage("borrow drill from John's kitchen")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.shopName).toBe('john')
+    })
+
+    it('extracts shopName from "borrow drill from John\'s collection"', () => {
+      const result = parseMessage("borrow drill from John's collection")
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('drill')
+      expect(result.entities.shopName).toBe('john')
+    })
+  })
+
+  describe('ADD_ITEM with collection types', () => {
+    it('extracts shopName from "add blender to Sarah\'s workshop"', () => {
+      const result = parseMessage("add blender to Sarah's workshop")
+      expect(result.type).toBe('ADD_ITEM')
+      expect(result.entities.itemName).toBe('blender')
+      expect(result.entities.shopName).toBe('sarah')
+    })
+
+    it('extracts shopName from "add mixer to Sarah\'s kitchen"', () => {
+      const result = parseMessage("add mixer to Sarah's kitchen")
+      expect(result.type).toBe('ADD_ITEM')
+      expect(result.entities.itemName).toBe('mixer')
+      expect(result.entities.shopName).toBe('sarah')
+    })
   })
 
   describe('RETURN intent', () => {

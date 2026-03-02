@@ -219,7 +219,7 @@ export default function VillageSettingsPage({
         <CardHeader>
           <CardTitle className="text-destructive">Danger Zone</CardTitle>
           <CardDescription>
-            Permanently delete this village and all its shops, items, and data.
+            Permanently delete this village and all its collections, items, and data.
             This action cannot be undone.
           </CardDescription>
         </CardHeader>
@@ -236,7 +236,7 @@ export default function VillageSettingsPage({
                 <DialogTitle>Delete Village</DialogTitle>
                 <DialogDescription>
                   This will permanently delete <strong>{village.name}</strong>{" "}
-                  and all associated shops, items, members, and data.
+                  and all associated collections, items, members, and data.
                 </DialogDescription>
               </DialogHeader>
 

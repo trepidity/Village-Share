@@ -4,9 +4,9 @@ import { createClient } from "@/lib/supabase/server";
 export default async function ShopMembersPage({
   params,
 }: {
-  params: Promise<{ shopId: string }>;
+  params: Promise<{ collectionId: string }>;
 }) {
-  const { shopId } = await params;
+  const { collectionId: shopId } = await params;
   const supabase = await createClient();
 
   // Look up the shop's village and redirect to village members page
@@ -20,5 +20,5 @@ export default async function ShopMembersPage({
     redirect(`/villages/${shop.village_id}/members`);
   }
 
-  redirect(`/shops/${shopId}`);
+  redirect(`/collections/${shopId}`);
 }

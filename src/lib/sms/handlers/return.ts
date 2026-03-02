@@ -130,7 +130,7 @@ export async function handleReturn(
         : ''
       await supabase.from('notifications').insert({
         user_id: shop.owner_id,
-        body: `${returnerName} returned "${matchedItem.name}" to ${shop?.short_name ?? 'your shop'}.${locationNote}`,
+        body: `${returnerName} returned "${matchedItem.name}" to ${shop?.short_name ?? 'your collection'}.${locationNote}`,
         channel: 'sms',
       })
     }

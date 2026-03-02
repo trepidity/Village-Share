@@ -31,21 +31,25 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Store, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { CollectionIcon } from "@/components/collection-icon";
+import { COLLECTION_TYPE_OPTIONS } from "@/lib/collections";
+import type { CollectionType } from "@/lib/supabase/types";
 
-const createShopSchema = z.object({
+const createCollectionSchema = z.object({
   village_id: z.string().min(1, "Village is required"),
+  type: z.string().min(1),
   short_name: z.string().min(1, "Short name is required").max(12, "Short name must be 12 characters or less"),
   name: z.string().min(1, "Display name is required").max(100, "Name is too long"),
   description: z.string().max(500, "Description is too long").optional(),
 });
 
-type CreateShopForm = z.infer<typeof createShopSchema>;
+type CreateCollectionForm = z.infer<typeof createCollectionSchema>;
 
 type Village = { id: string; name: string };
 
-export default function NewShopPage() {
+export default function NewCollectionPage() {
   const [error, setError] = useState("");
   const [villages, setVillages] = useState<Village[]>([]);
   const [loadingVillages, setLoadingVillages] = useState(true);
@@ -55,10 +59,11 @@ export default function NewShopPage() {
 
   const preselectedVillageId = searchParams.get("villageId") ?? "";
 
-  const form = useForm<CreateShopForm>({
-    resolver: zodResolver(createShopSchema),
+  const form = useForm<CreateCollectionForm>({
+    resolver: zodResolver(createCollectionSchema),
     defaultValues: {
       village_id: preselectedVillageId,
+      type: "general",
       short_name: "",
       name: "",
       description: "",
@@ -93,14 +98,14 @@ export default function NewShopPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const onSubmit = async (values: CreateShopForm) => {
+  const onSubmit = async (values: CreateCollectionForm) => {
     setError("");
 
     const {
       data: { user },
     } = await supabase.auth.getUser();
     if (!user) {
-      setError("You must be signed in to create a shop.");
+      setError("You must be signed in to create a collection.");
       return;
     }
 
@@ -110,6 +115,7 @@ export default function NewShopPage() {
         name: values.name,
         short_name: values.short_name,
         description: values.description || null,
+        type: values.type as CollectionType,
         owner_id: user.id,
         village_id: values.village_id,
       })
@@ -121,7 +127,7 @@ export default function NewShopPage() {
       return;
     }
 
-    router.push(`/shops/${shop.id}`);
+    router.push(`/collections/${shop.id}`);
   };
 
   if (loadingVillages) {
@@ -137,10 +143,10 @@ export default function NewShopPage() {
       <div className="mx-auto max-w-2xl space-y-6 p-6">
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Store className="h-12 w-12 text-muted-foreground mb-4" />
+            <CollectionIcon type="general" className="h-12 w-12 text-muted-foreground mb-4" />
             <h3 className="text-lg font-medium mb-2">No villages yet</h3>
             <p className="text-muted-foreground mb-4 text-center">
-              You need to be in a village before creating a shop.
+              You need to be in a village before creating a collection.
             </p>
             <Button asChild>
               <Link href="/villages/new">Create a Village First</Link>
@@ -159,17 +165,17 @@ export default function NewShopPage() {
             <ArrowLeft />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Create a New Shop</h1>
+        <h1 className="text-2xl font-bold">Create a New Collection</h1>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Store className="size-5" />
-            Shop Details
+            <CollectionIcon type={(form.watch("type") as CollectionType) ?? "general"} className="size-5" />
+            Collection Details
           </CardTitle>
           <CardDescription>
-            A shop is a lending library within your village where members can
+            A collection is a lending library within your village where members can
             share and borrow items.
           </CardDescription>
         </CardHeader>
@@ -200,6 +206,37 @@ export default function NewShopPage() {
                         ))}
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Collection Type</FormLabel>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                      {COLLECTION_TYPE_OPTIONS.map((opt) => (
+                        <button
+                          key={opt.value}
+                          type="button"
+                          onClick={() => field.onChange(opt.value)}
+                          className={`flex flex-col items-center gap-1.5 rounded-lg border p-3 text-center transition-colors ${
+                            field.value === opt.value
+                              ? "border-primary bg-primary/5"
+                              : "border-border hover:border-primary/50"
+                          }`}
+                        >
+                          <CollectionIcon
+                            type={opt.value}
+                            className="size-5 text-muted-foreground"
+                          />
+                          <span className="text-xs font-medium">{opt.label}</span>
+                        </button>
+                      ))}
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -256,7 +293,7 @@ export default function NewShopPage() {
                   <Link href="/">Cancel</Link>
                 </Button>
                 <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting ? "Creating..." : "Create Shop"}
+                  {form.formState.isSubmitting ? "Creating..." : "Create Collection"}
                 </Button>
               </div>
             </form>

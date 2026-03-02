@@ -4,9 +4,11 @@ import { createClient } from "@/lib/supabase/server"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Plus, Store } from "lucide-react"
+import { Plus } from "lucide-react"
+import { CollectionIcon } from "@/components/collection-icon"
+import type { CollectionType } from "@/lib/supabase/types"
 
-export default async function ShopsPage() {
+export default async function CollectionsPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -15,7 +17,7 @@ export default async function ShopsPage() {
   // RLS ensures only shops in user's villages are returned
   const { data: shops } = await supabase
     .from("shops")
-    .select("id, name, description, is_active, owner_id, village_id, villages(name)")
+    .select("id, name, description, type, is_active, owner_id, village_id, villages(name)")
     .order("created_at", { ascending: false })
 
   const shopList = (shops ?? []).map((shop) => ({
@@ -36,13 +38,13 @@ export default async function ShopsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">My Shops</h1>
-          <p className="text-muted-foreground">All shops across your villages</p>
+          <h1 className="text-2xl font-bold">My Collections</h1>
+          <p className="text-muted-foreground">All collections across your villages</p>
         </div>
         <Button asChild>
-          <Link href="/shops/new">
+          <Link href="/collections/new">
             <Plus className="mr-2 h-4 w-4" />
-            Create Shop
+            Create Collection
           </Link>
         </Button>
       </div>
@@ -50,11 +52,11 @@ export default async function ShopsPage() {
       {shopList.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Store className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No shops yet</h3>
-            <p className="text-muted-foreground mb-4">Create your first shop to start sharing items</p>
+            <CollectionIcon type="general" className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-medium mb-2">No collections yet</h3>
+            <p className="text-muted-foreground mb-4">Create your first collection to start sharing items</p>
             <Button asChild>
-              <Link href="/shops/new">Create Your First Shop</Link>
+              <Link href="/collections/new">Create Your First Collection</Link>
             </Button>
           </CardContent>
         </Card>
@@ -66,11 +68,14 @@ export default async function ShopsPage() {
             </h2>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {villageShops.map((shop) => (
-                <Link key={shop.id} href={`/shops/${shop.id}`}>
+                <Link key={shop.id} href={`/collections/${shop.id}`}>
                   <Card className="hover:border-primary/50 transition-colors h-full">
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{shop.name}</CardTitle>
+                        <div className="flex items-center gap-2">
+                          <CollectionIcon type={shop.type as CollectionType} className="size-4 text-muted-foreground" />
+                          <CardTitle className="text-lg">{shop.name}</CardTitle>
+                        </div>
                         {shop.isOwner && (
                           <Badge variant="default">owner</Badge>
                         )}

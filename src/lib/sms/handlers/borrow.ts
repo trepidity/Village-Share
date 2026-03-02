@@ -128,7 +128,7 @@ export async function handleBorrow(
       pickupLocation = locationShop?.short_name
     }
 
-    return templates.borrowConfirm(item.name, shop?.short_name ?? 'the shop', pickupLocation)
+    return templates.borrowConfirm(item.name, shop?.short_name ?? 'your collection', pickupLocation)
   } catch (err) {
     console.error('Borrow handler error:', err)
     return templates.error()

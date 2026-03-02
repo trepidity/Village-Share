@@ -8,6 +8,7 @@ export type Json =
 
 export type VillageRole = 'owner' | 'admin' | 'member'
 export type ItemStatus = 'available' | 'borrowed' | 'unavailable'
+export type CollectionType = 'workshop' | 'kitchen' | 'craft_room' | 'library' | 'garage' | 'closet' | 'party_supplies' | 'general'
 export type BorrowStatus = 'requested' | 'active' | 'returned' | 'cancelled'
 export type ReservationStatus = 'pending' | 'confirmed' | 'cancelled' | 'fulfilled'
 export type NotificationChannel = 'sms'
@@ -151,6 +152,7 @@ export interface Database {
           name: string
           short_name: string
           description: string | null
+          type: CollectionType
           is_active: boolean
           created_at: string
           updated_at: string
@@ -162,12 +164,14 @@ export interface Database {
           name: string
           short_name?: string
           description?: string | null
+          type?: CollectionType
           is_active?: boolean
         }
         Update: {
           name?: string
           short_name?: string
           description?: string | null
+          type?: CollectionType
           is_active?: boolean
         }
         Relationships: [
@@ -485,6 +489,7 @@ export interface Database {
       reservation_status: ReservationStatus
       notification_channel: NotificationChannel
       notification_status: NotificationStatus
+      collection_type: CollectionType
     }
     CompositeTypes: {
       [_ in never]: never

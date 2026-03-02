@@ -12,15 +12,15 @@ export const templates = {
       'VillageShare commands:',
       'BORROW [item] - borrow an item',
       'RETURN [item] - return an item',
-      'RETURN [item] at [shop] - return to a different location',
+      'RETURN [item] at [name] - return to a different location',
       'SEARCH [term] - find items',
       'WHERE IS [item] - find an item\'s location',
       'WHO HAS [item] - see who borrowed it',
       'RESERVE [item] for [date] - book ahead',
       'STATUS - see your borrows',
       'CANCEL [item] - cancel reservation',
-      'ADD [item] - add an item to your shop',
-      'REMOVE [item] - remove an item from your shop',
+      'ADD [item] - add an item to your collection',
+      'REMOVE [item] - remove an item from your collection',
     ].join('\n'),
 
   unknownUser: (appUrl: string) =>
@@ -42,7 +42,7 @@ export const templates = {
   noItemsFound: (query?: string) =>
     query
       ? `No items found matching "${query}". Try SEARCH to see everything available.`
-      : 'No items found in this shop right now.',
+      : 'No items found in this collection right now.',
 
   borrowConfirm: (itemName: string, shopName: string, pickupLocation?: string) =>
     pickupLocation
@@ -50,7 +50,7 @@ export const templates = {
       : `Done! You've borrowed the ${itemName} from ${shopName}. Text RETURN ${itemName} when you're done with it.`,
 
   borrowRequested: (itemName: string) =>
-    `Your request to borrow the ${itemName} has been sent to the shop owner. You'll get a text when it's approved.`,
+    `Your request to borrow the ${itemName} has been sent to the collection owner. You'll get a text when it's approved.`,
 
   returnConfirm: (itemName: string, locationName?: string) =>
     locationName
@@ -58,7 +58,7 @@ export const templates = {
       : `Got it! The ${itemName} has been marked as returned. Thanks for bringing it back!`,
 
   itemNotFound: (itemName: string) =>
-    `I couldn't find "${itemName}" in this shop. Text SEARCH to see what's available.`,
+    `I couldn't find "${itemName}" in this collection. Text SEARCH to see what's available.`,
 
   itemUnavailable: (itemName: string, status: string) =>
     `Sorry, the ${itemName} is currently ${status}. Want me to let you know when it's back? Reply YES.`,
@@ -135,7 +135,7 @@ export const templates = {
     `The ${itemName} is reserved ${conflictDates}. Try different dates or text SEARCH for alternatives.`,
 
   availabilityNone: (itemName: string) =>
-    `I couldn't find "${itemName}" in any of your shops. Text SEARCH to see what's available.`,
+    `I couldn't find "${itemName}" in any of your collections. Text SEARCH to see what's available.`,
 
   // WHO_HAS templates
   whoHasBorrower: (itemName: string, borrowerName: string, borrowerPhone?: string, dueAt?: string) => {
@@ -150,7 +150,7 @@ export const templates = {
     `The ${itemName} isn't currently borrowed. It's available!`,
 
   whoHasMultiple: (itemName: string, results: Array<{ shopName: string; borrowerName?: string; borrowerPhone?: string; dueAt?: string }>) => {
-    const header = `${itemName} across your shops:`
+    const header = `${itemName} across your collections:`
     const lines = results.slice(0, 6).map((r) => {
       if (r.borrowerName) {
         const phone = r.borrowerPhone ? ` (${r.borrowerPhone})` : ''
@@ -170,7 +170,7 @@ export const templates = {
     `There's already an item called "${itemName}" in ${shopName}.`,
 
   addItemNotOwner: () =>
-    'Only shop owners can add items. Ask the owner to add it, or manage items in the app.',
+    'Only collection owners can add items. Ask the owner to add it, or manage items in the app.',
 
   addItemPrompt: () =>
     'What item do you want to add? Text ADD [item name].',
@@ -183,7 +183,7 @@ export const templates = {
     `Can't remove the ${itemName} — it's currently borrowed. It needs to be returned first.`,
 
   removeItemNotOwner: () =>
-    'Only shop owners can remove items.',
+    'Only collection owners can remove items.',
 
   removeItemPrompt: () =>
     'What item do you want to remove? Text REMOVE [item name].',

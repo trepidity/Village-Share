@@ -86,7 +86,7 @@ export default async function BorrowsPage() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">My Borrows</h1>
         <p className="text-muted-foreground">
-          Track your borrowed items across all shops.
+          Track your borrowed items across all collections.
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export default async function BorrowsPage() {
             <BookOpen className="h-12 w-12 text-muted-foreground mb-4" />
             <CardTitle className="mb-2">No borrows yet</CardTitle>
             <CardDescription>
-              When you borrow items from a shop, they will appear here. You can
+              When you borrow items from a collection, they will appear here. You can
               also borrow via SMS by texting BORROW [item name].
             </CardDescription>
           </CardContent>
@@ -127,7 +127,7 @@ export default async function BorrowsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
-                      <TableHead>Shop</TableHead>
+                      <TableHead>Collection</TableHead>
                       <TableHead>Borrowed</TableHead>
                       <TableHead>Due</TableHead>
                       <TableHead>Status</TableHead>
@@ -149,7 +149,7 @@ export default async function BorrowsPage() {
                           <TableCell>
                             <div className="flex items-center gap-1.5 text-muted-foreground">
                               <Store className="h-3.5 w-3.5" />
-                              {borrow.shops?.name ?? "Unknown shop"}
+                              {borrow.shops?.name ?? "Unknown collection"}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -218,7 +218,7 @@ export default async function BorrowsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Item</TableHead>
-                      <TableHead>Shop</TableHead>
+                      <TableHead>Collection</TableHead>
                       <TableHead>Borrowed</TableHead>
                       <TableHead>Returned</TableHead>
                       <TableHead>Status</TableHead>
@@ -233,7 +233,7 @@ export default async function BorrowsPage() {
                         <TableCell>
                           <div className="flex items-center gap-1.5 text-muted-foreground">
                             <Store className="h-3.5 w-3.5" />
-                            {borrow.shops?.name ?? "Unknown shop"}
+                            {borrow.shops?.name ?? "Unknown collection"}
                           </div>
                         </TableCell>
                         <TableCell>

@@ -90,7 +90,7 @@ export default async function VillageDetailPage({
             <Store className="size-8 text-muted-foreground" />
             <div>
               <p className="text-2xl font-bold">{villageShops.length}</p>
-              <p className="text-sm text-muted-foreground">Shops</p>
+              <p className="text-sm text-muted-foreground">Collections</p>
             </div>
           </CardContent>
         </Card>
@@ -118,11 +118,11 @@ export default async function VillageDetailPage({
 
       {/* Shops section */}
       <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Shops</h2>
+        <h2 className="text-lg font-semibold">Collections</h2>
         <Button asChild>
-          <Link href={`/shops/new?villageId=${villageId}`}>
+          <Link href={`/collections/new?villageId=${villageId}`}>
             <Plus className="size-4" />
-            Add Shop
+            Add Collection
           </Link>
         </Button>
       </div>
@@ -131,14 +131,14 @@ export default async function VillageDetailPage({
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Store className="mb-4 size-12 text-muted-foreground" />
-            <CardTitle className="mb-2">No shops yet</CardTitle>
+            <CardTitle className="mb-2">No collections yet</CardTitle>
             <CardDescription>
-              Create the first shop in this village to start sharing items.
+              Create the first collection in this village to start sharing items.
             </CardDescription>
             <Button className="mt-4" asChild>
-              <Link href={`/shops/new?villageId=${villageId}`}>
+              <Link href={`/collections/new?villageId=${villageId}`}>
                 <Plus className="size-4" />
-                Create First Shop
+                Create First Collection
               </Link>
             </Button>
           </CardContent>
@@ -148,7 +148,7 @@ export default async function VillageDetailPage({
           {villageShops.map((shop) => {
             const owner = shop.profiles as unknown as { display_name: string | null } | null;
             return (
-              <Link key={shop.id} href={`/shops/${shop.id}`}>
+              <Link key={shop.id} href={`/collections/${shop.id}`}>
                 <Card className="hover:border-primary/50 transition-colors h-full">
                   <CardHeader>
                     <div className="flex items-center justify-between">

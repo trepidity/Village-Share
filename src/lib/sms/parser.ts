@@ -5,6 +5,12 @@ import type { ParsedIntent } from './intents'
 nlp.plugin(dates)
 
 /**
+ * Suffix pattern for matching collection/shop names in "from [name]'s shop/collection/kitchen/etc."
+ * Matches: 's shop, 's collection, 's kitchen, 's workshop, 's library, 's garage, 's closet, or nothing
+ */
+const COLLECTION_SUFFIX = `(?:'s?\\s+(?:shop|collection|kitchen|workshop|craft room|library|garage|closet|place))?`
+
+/**
  * Parse an incoming SMS message into a structured intent with entities.
  * Uses regex patterns for speed, falling back to compromise for entity extraction.
  */
@@ -108,7 +114,7 @@ export function parseMessage(message: string): ParsedIntent {
   // --- Fallback: loose borrow match ---
   // "the drill" or just an item-sounding phrase with "I need" / "can I get"
   const looseBorrow = lower.match(
-    /(?:i need|can i (?:get|use|have)|i'd like|i want)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?$/
+    new RegExp(`(?:i need|can i (?:get|use|have)|i'd like|i want)\\s+(?:the\\s+|a\\s+)?(.+?)(?:\\s+from\\s+(.+?)${COLLECTION_SUFFIX})?$`)
   )
   if (looseBorrow) {
     const entities: ParsedIntent['entities'] = {
@@ -180,8 +186,9 @@ function matchReturn(
 ): Omit<ParsedIntent, 'raw'> | null {
   // Pattern with both optional "to [shop]" and "at [location]"
   // e.g. "return drill to daniel at carson's"
-  const fullPattern =
-    /^(?:return|bring back|give back|drop off|i'm done with|im done with|finished with)\s+(?:the\s+)?(.+?)(?:\s+to\s+(.+?)(?:'s?\s+shop)?)?(?:,?\s+(?:left it |it's |its )?at\s+(.+?)(?:'s?(?:\s+(?:shop|place))?)?)?$/
+  const fullPattern = new RegExp(
+    `^(?:return|bring back|give back|drop off|i'm done with|im done with|finished with)\\s+(?:the\\s+)?(.+?)(?:\\s+to\\s+(.+?)${COLLECTION_SUFFIX})?(?:,?\\s+(?:left it |it's |its )?at\\s+(.+?)(?:'s?(?:\\s+(?:shop|collection|kitchen|workshop|place))?)?)?$`
+  )
 
   const match = lower.match(fullPattern)
   if (match) {
@@ -258,8 +265,8 @@ function matchBorrow(
 
   // "from" form: "borrow the drill from daniel"
   const borrowPatterns = [
-    /^(?:borrow|barrow|checkout|check out|rent|grab|pick up)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?$/,
-    /^(?:can i|could i|may i)\s+(?:borrow|barrow|get|use|have|rent)\s+(?:the\s+|a\s+)?(.+?)(?:\s+from\s+(.+?)(?:'s?\s+shop)?)?\??$/,
+    new RegExp(`^(?:borrow|barrow|checkout|check out|rent|grab|pick up)\\s+(?:the\\s+|a\\s+)?(.+?)(?:\\s+from\\s+(.+?)${COLLECTION_SUFFIX})?$`),
+    new RegExp(`^(?:can i|could i|may i)\\s+(?:borrow|barrow|get|use|have|rent)\\s+(?:the\\s+|a\\s+)?(.+?)(?:\\s+from\\s+(.+?)${COLLECTION_SUFFIX})?\\??$`),
   ]
 
   for (const pattern of borrowPatterns) {
@@ -409,9 +416,9 @@ function matchWhoHas(
 function matchAddItem(
   lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
-  // "add [item] to [shop]"
+  // "add [item] to [collection]"
   const addToShop = lower.match(
-    /^(?:add|create)\s+(?:a\s+|the\s+)?(.+?)\s+to\s+(.+?)(?:'s?\s+shop)?$/
+    new RegExp(`^(?:add|create)\\s+(?:a\\s+|the\\s+)?(.+?)\\s+to\\s+(.+?)${COLLECTION_SUFFIX}$`)
   )
   if (addToShop) {
     return {
@@ -458,9 +465,9 @@ function matchAddItem(
 function matchRemoveItem(
   lower: string
 ): Omit<ParsedIntent, 'raw'> | null {
-  // "remove [item] from [shop]" / "delete [item] from [shop]"
+  // "remove [item] from [collection]" / "delete [item] from [collection]"
   const removeFromShop = lower.match(
-    /^(?:remove|delete)\s+(?:the\s+|a\s+)?(.+?)\s+from\s+(.+?)(?:'s?\s+shop)?$/
+    new RegExp(`^(?:remove|delete)\\s+(?:the\\s+|a\\s+)?(.+?)\\s+from\\s+(.+?)${COLLECTION_SUFFIX}$`)
   )
   if (removeFromShop) {
     return {

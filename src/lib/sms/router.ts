@@ -304,7 +304,7 @@ async function resolveShop(
 
   return {
     error:
-      `You belong to multiple shops. Text "use [shop name]" to pick one:\n` +
+      `You belong to multiple collections. Text "use [name]" to pick one:\n` +
       shopNames.map((n, i) => `${i + 1}. ${n}`).join('\n'),
   }
 }

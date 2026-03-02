@@ -54,7 +54,7 @@ type BlackoutPeriod = Database["public"]["Tables"]["blackout_periods"]["Row"];
 
 const shopSchema = z.object({
   short_name: z.string().min(1, "Short name is required").max(12, "Short name must be 12 characters or less"),
-  name: z.string().min(1, "Shop name is required").max(100),
+  name: z.string().min(1, "Collection name is required").max(100),
   description: z.string().max(500).optional(),
 });
 
@@ -71,9 +71,9 @@ type BlackoutFormValues = z.infer<typeof blackoutSchema>;
 export default function SettingsPage({
   params,
 }: {
-  params: Promise<{ shopId: string }>;
+  params: Promise<{ collectionId: string }>;
 }) {
-  const { shopId } = use(params);
+  const { collectionId: shopId } = use(params);
   const supabase = createClient();
   const router = useRouter();
 
@@ -156,7 +156,7 @@ export default function SettingsPage({
     if (updateError) {
       setError(updateError.message);
     } else {
-      setSuccess("Shop settings saved.");
+      setSuccess("Collection settings saved.");
       await fetchData();
     }
 
@@ -250,7 +250,7 @@ export default function SettingsPage({
   if (!shop) {
     return (
       <div className="p-6 text-center text-muted-foreground">
-        Shop not found.
+        Collection not found.
       </div>
     );
   }
@@ -259,11 +259,11 @@ export default function SettingsPage({
     <div className="mx-auto max-w-2xl space-y-6 p-6">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
-          <Link href={`/shops/${shopId}`}>
+          <Link href={`/collections/${shopId}`}>
             <ArrowLeft />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Shop Settings</h1>
+        <h1 className="text-2xl font-bold">Collection Settings</h1>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -288,9 +288,9 @@ export default function SettingsPage({
       {/* Edit shop details */}
       <Card>
         <CardHeader>
-          <CardTitle>Shop Details</CardTitle>
+          <CardTitle>Collection Details</CardTitle>
           <CardDescription>
-            Update your shop name and description.
+            Update your collection name and description.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -353,9 +353,9 @@ export default function SettingsPage({
       {/* Active toggle */}
       <Card>
         <CardHeader>
-          <CardTitle>Shop Status</CardTitle>
+          <CardTitle>Collection Status</CardTitle>
           <CardDescription>
-            Deactivating a shop hides it from new borrowing requests.
+            Deactivating a collection hides it from new borrowing requests.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -373,7 +373,7 @@ export default function SettingsPage({
                 <p className="text-sm text-muted-foreground">
                   {shop.is_active
                     ? "Members can browse and borrow items."
-                    : "This shop is currently hidden from members."}
+                    : "This collection is currently hidden from members."}
                 </p>
               </div>
             </div>
@@ -396,7 +396,7 @@ export default function SettingsPage({
             <div>
               <CardTitle>Blackout Periods</CardTitle>
               <CardDescription>
-                Periods when the shop is unavailable for borrowing.
+                Periods when the collection is unavailable for borrowing.
               </CardDescription>
             </div>
             <Dialog open={blackoutOpen} onOpenChange={setBlackoutOpen}>
@@ -410,7 +410,7 @@ export default function SettingsPage({
                 <DialogHeader>
                   <DialogTitle>Add Blackout Period</DialogTitle>
                   <DialogDescription>
-                    Set a period when the shop will be unavailable.
+                    Set a period when the collection will be unavailable.
                   </DialogDescription>
                 </DialogHeader>
                 <Form {...blackoutForm}>
@@ -537,7 +537,7 @@ export default function SettingsPage({
         <CardHeader>
           <CardTitle className="text-destructive">Danger Zone</CardTitle>
           <CardDescription>
-            Permanently delete this shop and all its data. This action cannot be
+            Permanently delete this collection and all its data. This action cannot be
             undone.
           </CardDescription>
         </CardHeader>
@@ -546,12 +546,12 @@ export default function SettingsPage({
             <DialogTrigger asChild>
               <Button variant="destructive">
                 <Trash2 className="size-4" />
-                Delete Shop
+                Delete Collection
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Delete Shop</DialogTitle>
+                <DialogTitle>Delete Collection</DialogTitle>
                 <DialogDescription>
                   This will permanently delete <strong>{shop.name}</strong> and
                   all associated items, members, and data. This action cannot be

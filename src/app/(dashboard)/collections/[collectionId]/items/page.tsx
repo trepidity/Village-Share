@@ -78,9 +78,9 @@ type ItemFormValues = z.infer<typeof itemSchema>;
 export default function ItemsPage({
   params,
 }: {
-  params: Promise<{ shopId: string }>;
+  params: Promise<{ collectionId: string }>;
 }) {
-  const { shopId } = use(params);
+  const { collectionId: shopId } = use(params);
   const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient();
@@ -124,7 +124,7 @@ export default function ItemsPage({
     if (addParam === "true") {
       setAddOpen(true);
       urlParamsHandled.current = true;
-      router.replace(`/shops/${shopId}/items`, { scroll: false });
+      router.replace(`/collections/${shopId}/items`, { scroll: false });
     } else if (editParam && items.length > 0) {
       const item = items.find((i) => i.id === editParam);
       if (item) {
@@ -138,7 +138,7 @@ export default function ItemsPage({
         setPhotoFile(null);
       }
       urlParamsHandled.current = true;
-      router.replace(`/shops/${shopId}/items`, { scroll: false });
+      router.replace(`/collections/${shopId}/items`, { scroll: false });
     }
   }, [searchParams, items, shopId, router, form]);
 
@@ -279,7 +279,7 @@ export default function ItemsPage({
     <div className="mx-auto max-w-5xl space-y-6 p-6">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
-          <Link href={`/shops/${shopId}`}>
+          <Link href={`/collections/${shopId}`}>
             <ArrowLeft />
           </Link>
         </Button>
@@ -302,7 +302,7 @@ export default function ItemsPage({
             <DialogHeader>
               <DialogTitle>Add New Item</DialogTitle>
               <DialogDescription>
-                Add an item to your shop for community members to borrow.
+                Add an item to your collection for community members to borrow.
               </DialogDescription>
             </DialogHeader>
             <Form {...form}>
@@ -481,7 +481,7 @@ export default function ItemsPage({
             <ImageIcon className="mb-4 size-12 text-muted-foreground" />
             <CardTitle className="mb-2">No items yet</CardTitle>
             <p className="text-muted-foreground">
-              Click &quot;Add Item&quot; to add your first item to this shop.
+              Click &quot;Add Item&quot; to add your first item to this collection.
             </p>
           </CardContent>
         </Card>
