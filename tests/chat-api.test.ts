@@ -135,4 +135,15 @@ describe('/api/chat POST', () => {
     const body = await res.json()
     expect(body.activeShopId).toBeNull()
   })
+
+  it('passes source: "chat" to routeIntent', async () => {
+    const { routeIntent } = await import('@/lib/sms/router')
+
+    await POST(makeRequest({ message: 'help' }))
+
+    expect(routeIntent).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ source: 'chat' })
+    )
+  })
 })

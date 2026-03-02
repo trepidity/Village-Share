@@ -81,6 +81,18 @@ describe('SMS Parser', () => {
       expect(result.entities.itemName).toBe("16' trailer")
     })
 
+    it('handles typo "barrow the drill"', () => {
+      const result = parseMessage('barrow the drill')
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('drill')
+    })
+
+    it('handles typo "can i barrow the saw?"', () => {
+      const result = parseMessage('can i barrow the saw?')
+      expect(result.type).toBe('BORROW')
+      expect(result.entities.itemName).toBe('saw')
+    })
+
     it('matches "checkout the table saw"', () => {
       const result = parseMessage('checkout the table saw')
       expect(result.type).toBe('BORROW')
@@ -143,6 +155,13 @@ describe('SMS Parser', () => {
       expect(result.entities.locationName).toBe('carson')
     })
 
+    it('extracts locationName from "return 16\' trailer at daniels"', () => {
+      const result = parseMessage("return 16' trailer at daniels")
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe("16' trailer")
+      expect(result.entities.locationName).toBe('daniels')
+    })
+
     it('does not set locationName when not present', () => {
       const result = parseMessage('return the drill')
       expect(result.type).toBe('RETURN')
@@ -198,6 +217,21 @@ describe('SMS Parser', () => {
 
     it('matches "my tools"', () => {
       const result = parseMessage('my tools')
+      expect(result.type).toBe('STATUS')
+    })
+
+    it('matches "status of my stuff"', () => {
+      const result = parseMessage('status of my stuff')
+      expect(result.type).toBe('STATUS')
+    })
+
+    it('matches "status of my rentals"', () => {
+      const result = parseMessage('status of my rentals')
+      expect(result.type).toBe('STATUS')
+    })
+
+    it('matches "my rentals"', () => {
+      const result = parseMessage('my rentals')
       expect(result.type).toBe('STATUS')
     })
   })
@@ -350,6 +384,26 @@ describe('SMS Parser', () => {
       const result = parseMessage('where do I get the trailer?')
       expect(result.type).toBe('AVAILABILITY')
       expect(result.entities.itemName).toBe('trailer')
+    })
+  })
+
+  describe('WHO_HAS intent — multi-word items', () => {
+    it('parses "who has 16\' trailer" with item name', () => {
+      const result = parseMessage("who has 16' trailer")
+      expect(result.type).toBe('WHO_HAS')
+      expect(result.entities.itemName).toBe("16' trailer")
+    })
+
+    it('parses "who has the table saw"', () => {
+      const result = parseMessage('who has the table saw')
+      expect(result.type).toBe('WHO_HAS')
+      expect(result.entities.itemName).toBe('table saw')
+    })
+
+    it('parses "who borrowed the pressure washer?"', () => {
+      const result = parseMessage('who borrowed the pressure washer?')
+      expect(result.type).toBe('WHO_HAS')
+      expect(result.entities.itemName).toBe('pressure washer')
     })
   })
 

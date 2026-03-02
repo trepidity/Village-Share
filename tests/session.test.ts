@@ -76,4 +76,19 @@ describe('buildLastIntentState', () => {
 
     expect(awaiting.shop_id).toBeNull()
   })
+
+  it('detects "multiple shops" response as disambiguation', () => {
+    const intent = makeIntent({ type: 'BORROW' })
+    const response =
+      'You belong to multiple shops. Text "use [shop name]" to pick one:\n1. Jared\'s Tools\n2. Daniel\'s Garage'
+    const result = buildLastIntentState(intent, response) as Record<string, unknown>
+
+    expect(result).not.toBeNull()
+    const awaiting = result.awaiting_choice as Record<string, unknown>
+    expect(awaiting.intent_type).toBe('BORROW')
+    const options = awaiting.options as Array<{ name: string }>
+    expect(options).toHaveLength(2)
+    expect(options[0].name).toBe("Jared's Tools")
+    expect(options[1].name).toBe("Daniel's Garage")
+  })
 })
