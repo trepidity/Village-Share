@@ -39,7 +39,6 @@ interface SmsContext {
 const SHOP_REQUIRED_INTENTS = new Set([
   'BORROW',
   'RETURN',
-  'SEARCH',
   'RESERVE',
   'ADD_ITEM',
   'REMOVE_ITEM',
@@ -117,11 +116,20 @@ export async function routeIntent(
       case 'STATUS':
         return await handleStatus({ userId: context.userId })
 
-      case 'SEARCH':
+      case 'SEARCH': {
+        let searchShopId = context.activeShopId
+        if (intent.entities.shopName) {
+          const byName = await resolveShopByName(
+            context.userId,
+            intent.entities.shopName
+          )
+          if (byName) searchShopId = byName
+        }
         return await handleSearch(intent, {
           userId: context.userId,
-          shopId: shopId!,
+          shopId: searchShopId ?? undefined,
         })
+      }
 
       case 'BORROW':
         return await handleBorrow(intent, {

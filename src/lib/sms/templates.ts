@@ -39,10 +39,31 @@ export const templates = {
     return [header, ...lines].join('\n') + overflow
   },
 
-  noItemsFound: (query?: string) =>
+  searchResultsCrossShop: (
+    query: string | undefined,
+    results: Array<{ shopName: string; name: string; status: string }>
+  ) => {
+    const header = query
+      ? `Results for "${query}":`
+      : `Items across your collections:`
+    const lines = results
+      .slice(0, 8)
+      .map((r) => `- ${r.name} (${r.status}) [${r.shopName}]`)
+    const overflow =
+      results.length > 8
+        ? `\n...and ${results.length - 8} more. Text SEARCH [term] to narrow results.`
+        : ''
+    return [header, ...lines].join('\n') + overflow
+  },
+
+  noItemsFound: (query?: string, crossShop?: boolean) =>
     query
-      ? `No items found matching "${query}". Try SEARCH to see everything available.`
-      : 'No items found in this collection right now.',
+      ? crossShop
+        ? `No items found matching "${query}" in any of your collections.`
+        : `No items found matching "${query}". Try SEARCH to see everything available.`
+      : crossShop
+        ? 'No items found in any of your collections right now.'
+        : 'No items found in this collection right now.',
 
   borrowConfirm: (itemName: string, shopName: string, pickupLocation?: string) =>
     pickupLocation
