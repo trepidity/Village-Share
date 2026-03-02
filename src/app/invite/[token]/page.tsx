@@ -55,7 +55,7 @@ export default async function InvitePage({
   const admin = createAdminClient();
 
   // Look up the invite using admin client (page is accessible to unauthenticated users)
-  const { data: invite, error: inviteError } = await admin
+  const { data: invite } = await admin
     .from("village_invites")
     .select("*")
     .eq("token", token)
