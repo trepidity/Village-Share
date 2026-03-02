@@ -5,6 +5,7 @@ import { parseMessage } from '@/lib/sms/parser'
 import { routeIntent, type LastIntent } from '@/lib/sms/router'
 import { buildLastIntentState } from '@/lib/sms/session'
 import { templates } from '@/lib/sms/templates'
+import { logChatEvent } from '@/lib/sms/logger'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://villageshare.app'
 
@@ -69,6 +70,9 @@ export async function POST(request: NextRequest) {
       return twiml(templates.error())
     }
 
+    const startTime = Date.now()
+    let aiFallbackUsed = false
+
     const supabase = createAdminClient()
 
     // Look up SMS session by phone number
@@ -93,6 +97,7 @@ export async function POST(request: NextRequest) {
         const aiIntent = await parseWithAI(body)
         if (aiIntent && aiIntent.confidence > intent.confidence) {
           intent = aiIntent
+          aiFallbackUsed = true
         }
       } catch (aiError) {
         // AI fallback is optional - proceed with original parse
@@ -108,6 +113,8 @@ export async function POST(request: NextRequest) {
       lastIntent: session.last_intent as LastIntent | null,
       source: 'sms',
     })
+
+    logChatEvent('sms', session.user_id, intent, aiFallbackUsed, responseText, startTime)
 
     // Build last_intent state for session persistence
     // If the response contains disambiguation options, store them

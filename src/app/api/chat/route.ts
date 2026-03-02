@@ -4,6 +4,7 @@ import { parseMessage } from '@/lib/sms/parser'
 import { routeIntent, type LastIntent } from '@/lib/sms/router'
 import { buildLastIntentState } from '@/lib/sms/session'
 import { templates } from '@/lib/sms/templates'
+import { logChatEvent } from '@/lib/sms/logger'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -27,6 +28,9 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const startTime = Date.now()
+    let aiFallbackUsed = false
+
     // Parse the message through the NLP pipeline
     let intent = parseMessage(trimmed)
 
@@ -37,6 +41,7 @@ export async function POST(request: NextRequest) {
         const aiIntent = await parseWithAI(trimmed)
         if (aiIntent && aiIntent.confidence > intent.confidence) {
           intent = aiIntent
+          aiFallbackUsed = true
         }
       } catch {
         // AI fallback is optional
@@ -58,6 +63,8 @@ export async function POST(request: NextRequest) {
       lastIntent: lastIntent ?? null,
       source: 'chat',
     })
+
+    logChatEvent('chat', user.id, intent, aiFallbackUsed, reply, startTime)
 
     // Compute updated disambiguation state
     const newLastIntent = buildLastIntentState(intent, reply)
