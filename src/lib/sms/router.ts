@@ -30,6 +30,7 @@ interface SmsContext {
   phone: string
   activeShopId: string | null
   lastIntent: LastIntent | null
+  source?: 'chat' | 'sms'
 }
 
 /**
@@ -157,8 +158,16 @@ export async function routeIntent(
         return await handleCancel(intent, { userId: context.userId })
 
       case 'UNKNOWN':
-      default:
+      default: {
+        const admin = createAdminClient()
+        await admin.from('unrecognized_messages').insert({
+          user_id: context.userId,
+          raw_message: intent.raw,
+          source: context.source ?? 'sms',
+          ai_attempted: intent.confidence > 0,
+        })
         return templates.help()
+      }
     }
   } catch (err) {
     console.error('Router error:', err)

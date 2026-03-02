@@ -58,6 +58,7 @@ export async function POST(request: NextRequest) {
       phone: profile?.phone ?? '',
       activeShopId: activeShopId ?? null,
       lastIntent: lastIntent ?? null,
+      source: 'chat',
     })
 
     // Compute updated disambiguation state

@@ -440,6 +440,37 @@ export interface Database {
           }
         ]
       }
+      unrecognized_messages: {
+        Row: {
+          id: string
+          user_id: string
+          raw_message: string
+          source: string
+          ai_attempted: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          raw_message: string
+          source: string
+          ai_attempted?: boolean
+        }
+        Update: {
+          raw_message?: string
+          source?: string
+          ai_attempted?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "unrecognized_messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
     }
     Views: {
       [_ in never]: never

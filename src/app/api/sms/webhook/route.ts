@@ -106,6 +106,7 @@ export async function POST(request: NextRequest) {
       phone,
       activeShopId: session.active_shop_id,
       lastIntent: session.last_intent as LastIntent | null,
+      source: 'sms',
     })
 
     // Build last_intent state for session persistence
