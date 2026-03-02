@@ -24,6 +24,24 @@ export default async function VillagesPage() {
     })
     .filter(Boolean) ?? []
 
+  const villageIds = villages.map((v) => v.id)
+
+  const [{ data: memberRows }, { data: shopRows }] = villageIds.length > 0
+    ? await Promise.all([
+        supabase.from("village_members").select("village_id").in("village_id", villageIds),
+        supabase.from("shops").select("village_id").in("village_id", villageIds),
+      ])
+    : [{ data: [] }, { data: [] }]
+
+  const memberCountMap: Record<string, number> = {}
+  const shopCountMap: Record<string, number> = {}
+  for (const r of memberRows ?? []) {
+    memberCountMap[r.village_id] = (memberCountMap[r.village_id] ?? 0) + 1
+  }
+  for (const r of shopRows ?? []) {
+    shopCountMap[r.village_id] = (shopCountMap[r.village_id] ?? 0) + 1
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -72,11 +90,11 @@ export default async function VillagesPage() {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <span className="flex items-center gap-1">
                       <Users className="size-3.5" />
-                      Members
+                      {memberCountMap[village.id] ?? 0} Members
                     </span>
                     <span className="flex items-center gap-1">
                       <Store className="size-3.5" />
-                      Shops
+                      {shopCountMap[village.id] ?? 0} Shops
                     </span>
                   </div>
                 </CardContent>
