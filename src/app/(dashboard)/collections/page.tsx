@@ -14,15 +14,14 @@ export default async function CollectionsPage() {
 
   if (!user) redirect("/login")
 
-  // RLS ensures only shops in user's villages are returned
   const { data: shops } = await supabase
     .from("shops")
     .select("id, name, description, type, is_active, owner_id, village_id, villages(name)")
+    .eq("owner_id", user.id)
     .order("created_at", { ascending: false })
 
   const shopList = (shops ?? []).map((shop) => ({
     ...shop,
-    isOwner: shop.owner_id === user.id,
     villageName: (shop.villages as unknown as { name: string } | null)?.name ?? null,
   }))
 
@@ -76,9 +75,6 @@ export default async function CollectionsPage() {
                           <CollectionIcon type={shop.type as CollectionType} className="size-4 text-muted-foreground" />
                           <CardTitle className="text-lg">{shop.name}</CardTitle>
                         </div>
-                        {shop.isOwner && (
-                          <Badge variant="default">owner</Badge>
-                        )}
                       </div>
                       <CardDescription className="line-clamp-2">
                         {shop.description || "No description"}
