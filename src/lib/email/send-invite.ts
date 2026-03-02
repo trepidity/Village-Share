@@ -89,15 +89,37 @@ export async function sendInviteEmail({
 
   const text = `${inviterName} has invited you to join ${villageName} as a ${roleBadge}.${villageDescription ? `\n\n${villageDescription}` : ""}\n\nAccept the invite: ${inviteUrl}\n\nThis invite expires in 7 days.`;
 
-  const { error } = await resend.emails.send({
+  const subject = `You're invited to join ${villageName} on VillageShare`;
+  const start = Date.now();
+
+  const { data, error } = await resend.emails.send({
     from,
     to,
-    subject: `You're invited to join ${villageName} on VillageShare`,
+    subject,
     html,
     text,
   });
 
   if (error) {
+    console.log(JSON.stringify({
+      event: "email_send",
+      timestamp: new Date().toISOString(),
+      to,
+      subject,
+      durationMs: Date.now() - start,
+      ok: false,
+      error: error.message,
+    }));
     throw new Error(`Failed to send invite email: ${error.message}`);
   }
+
+  console.log(JSON.stringify({
+    event: "email_send",
+    timestamp: new Date().toISOString(),
+    to,
+    subject,
+    durationMs: Date.now() - start,
+    ok: true,
+    emailId: data?.id,
+  }));
 }

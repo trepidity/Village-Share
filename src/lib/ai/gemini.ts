@@ -22,6 +22,8 @@ export async function callGemini(
     return ''
   }
 
+  const start = Date.now()
+
   try {
     const response = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
       method: 'POST',
@@ -38,9 +40,16 @@ export async function callGemini(
     })
 
     if (!response.ok) {
-      console.error(
-        `Gemini API error: ${response.status} ${response.statusText}`
-      )
+      console.log(JSON.stringify({
+        event: 'gemini_api_call',
+        timestamp: new Date().toISOString(),
+        systemPrompt,
+        userPrompt,
+        durationMs: Date.now() - start,
+        ok: false,
+        status: response.status,
+        error: response.statusText,
+      }))
       return ''
     }
 
@@ -48,13 +57,39 @@ export async function callGemini(
 
     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text
     if (typeof text !== 'string') {
-      console.error('Gemini returned unexpected response shape:', data)
+      console.log(JSON.stringify({
+        event: 'gemini_api_call',
+        timestamp: new Date().toISOString(),
+        systemPrompt,
+        userPrompt,
+        durationMs: Date.now() - start,
+        ok: false,
+        error: 'Unexpected response shape',
+      }))
       return ''
     }
 
+    console.log(JSON.stringify({
+      event: 'gemini_api_call',
+      timestamp: new Date().toISOString(),
+      systemPrompt,
+      userPrompt,
+      durationMs: Date.now() - start,
+      ok: true,
+      responseText: text,
+    }))
+
     return text
   } catch (err) {
-    console.error('Gemini fetch failed:', err)
+    console.log(JSON.stringify({
+      event: 'gemini_api_call',
+      timestamp: new Date().toISOString(),
+      systemPrompt,
+      userPrompt,
+      durationMs: Date.now() - start,
+      ok: false,
+      error: err instanceof Error ? err.message : String(err),
+    }))
     return ''
   }
 }
