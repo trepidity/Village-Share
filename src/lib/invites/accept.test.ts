@@ -10,14 +10,9 @@ function createMockClient(overrides: {
   inviteError?: Record<string, unknown> | null
   existingMember?: Record<string, unknown> | null
   insertError?: Record<string, unknown> | null
-  updateError?: Record<string, unknown> | null
 } = {}) {
   const insertFn = vi.fn().mockResolvedValue({
     error: overrides.insertError ?? null,
-  })
-
-  const updateEqFn = vi.fn().mockResolvedValue({
-    error: overrides.updateError ?? null,
   })
 
   // Track calls per table for assertions
@@ -28,18 +23,13 @@ function createMockClient(overrides: {
       return {
         select: vi.fn().mockReturnValue({
           eq: vi.fn().mockReturnValue({
-            is: vi.fn().mockReturnValue({
-              gt: vi.fn().mockReturnValue({
-                single: vi.fn().mockResolvedValue({
-                  data: overrides.invite !== undefined ? overrides.invite : null,
-                  error: overrides.inviteError ?? (overrides.invite ? null : { code: 'PGRST116' }),
-                }),
+            gt: vi.fn().mockReturnValue({
+              single: vi.fn().mockResolvedValue({
+                data: overrides.invite !== undefined ? overrides.invite : null,
+                error: overrides.inviteError ?? (overrides.invite ? null : { code: 'PGRST116' }),
               }),
             }),
           }),
-        }),
-        update: vi.fn().mockReturnValue({
-          eq: updateEqFn,
         }),
         insert: insertFn,
       }
@@ -74,7 +64,6 @@ function createMockClient(overrides: {
     client: { from } as unknown as Parameters<typeof acceptVillageInvite>[2],
     from,
     insertFn,
-    updateEqFn,
     fromCalls,
   }
 }
@@ -101,8 +90,8 @@ describe('acceptVillageInvite', () => {
     vi.restoreAllMocks()
   })
 
-  it('inserts a village member and marks invite as accepted', async () => {
-    const { client, insertFn, updateEqFn } = createMockClient({
+  it('inserts a village member and returns success', async () => {
+    const { client, insertFn } = createMockClient({
       invite: VALID_INVITE,
       existingMember: null,
     })
@@ -118,9 +107,6 @@ describe('acceptVillageInvite', () => {
       user_id: USER_ID,
       role: 'member',
     })
-
-    // Should have marked invite as accepted
-    expect(updateEqFn).toHaveBeenCalled()
   })
 
   it('returns failure when invite is not found', async () => {

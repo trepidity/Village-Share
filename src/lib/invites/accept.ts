@@ -23,12 +23,11 @@ export async function acceptVillageInvite(
 ): Promise<AcceptResult> {
   const supabase = adminClient ?? createAdminClient()
 
-  // Fetch valid invite
+  // Fetch valid invite (reusable — anyone with the link can join until it expires)
   const { data: invite, error: inviteError } = await supabase
     .from('village_invites')
     .select('*')
     .eq('token', token)
-    .is('accepted_at', null)
     .gt('expires_at', new Date().toISOString())
     .single()
 
@@ -57,12 +56,6 @@ export async function acceptVillageInvite(
       return { success: false, error: 'Failed to join village' }
     }
   }
-
-  // Mark invite as accepted
-  await supabase
-    .from('village_invites')
-    .update({ accepted_at: new Date().toISOString() })
-    .eq('id', invite.id)
 
   return { success: true, villageId: invite.village_id }
 }
