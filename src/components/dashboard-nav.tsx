@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation"
 import {
   Store,
   BookOpen,
+  HandHeart,
   MessageCircle,
   LogOut,
   Plus,
@@ -48,6 +49,7 @@ const navLinks = [
   { href: "/villages", label: "My Villages", icon: Home },
   { href: "/collections", label: "My Collections", icon: Store },
   { href: "/borrows", label: "My Borrows", icon: BookOpen },
+  { href: "/loans", label: "My Loans", icon: HandHeart },
 ]
 
 function getInitials(name: string | null, email?: string): string {
