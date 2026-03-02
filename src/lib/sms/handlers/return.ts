@@ -42,12 +42,11 @@ export async function handleReturn(
       return templates.itemNotFound(itemName)
     }
 
-    // Find borrow matching the item name (fuzzy)
-    const lowerName = itemName.toLowerCase()
+    // Find borrow matching the item name (fuzzy, all words in any order)
+    const words = itemName.toLowerCase().split(/\s+/).filter(Boolean)
     const matchingBorrow = borrows.find((b) => {
-      const item = b.items as unknown as { id: string; name: string; shop_id: string }
-      return item.name.toLowerCase().includes(lowerName) ||
-        lowerName.includes(item.name.toLowerCase())
+      const name = (b.items as unknown as { id: string; name: string; shop_id: string }).name.toLowerCase()
+      return words.every((w) => name.includes(w))
     })
 
     if (!matchingBorrow) {
