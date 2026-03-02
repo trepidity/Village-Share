@@ -29,6 +29,10 @@ info "Running linter..."
 npm run lint
 ok "Lint passed"
 
+info "Type-checking..."
+npx tsc --noEmit
+ok "Type-check passed"
+
 info "Building project..."
 npm run build
 ok "Build succeeded"
@@ -51,6 +55,7 @@ REQUIRED_VARS=(
   TWILIO_PHONE_NUMBER
   TWILIO_VERIFY_SERVICE_SID
   GEMINI_API_KEY
+  RESEND_API_KEY
   NEXT_PUBLIC_APP_URL
   CRON_SECRET
 )
@@ -91,6 +96,15 @@ fi
 
 $SUPABASE_CMD db push --linked
 ok "Migrations applied"
+
+# Confirm before deploying
+echo ""
+warn "You are about to deploy to PRODUCTION."
+read -rp "Continue? (y/N) " confirm
+if [[ "$confirm" != "y" && "$confirm" != "Y" ]]; then
+  info "Deployment cancelled."
+  exit 0
+fi
 
 # Deploy
 echo ""

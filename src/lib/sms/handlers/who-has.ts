@@ -76,7 +76,38 @@ export async function handleWhoHas(
       return templates.availabilityNone(itemName)
     }
 
-    // For each matched item, check for active borrows
+    // Batch fetch all active borrows for matched items
+    const itemIds = items.map((i) => i.id)
+    const { data: activeBorrows } = await supabase
+      .from('borrows')
+      .select('item_id, borrower_id, due_at')
+      .in('item_id', itemIds)
+      .eq('status', 'active')
+
+    // Index borrows by item_id for quick lookup
+    const borrowByItem = new Map(
+      (activeBorrows ?? []).map((b) => [b.item_id, b])
+    )
+
+    // Batch fetch all unique borrower profiles
+    const borrowerIds = [
+      ...new Set((activeBorrows ?? []).map((b) => b.borrower_id)),
+    ]
+    const profileMap = new Map<
+      string,
+      { display_name: string | null; phone: string | null }
+    >()
+    if (borrowerIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, display_name, phone')
+        .in('id', borrowerIds)
+      for (const p of profiles ?? []) {
+        profileMap.set(p.id, p)
+      }
+    }
+
+    // Build results from the pre-fetched data
     const results: Array<{
       itemName: string
       shopName: string
@@ -87,31 +118,16 @@ export async function handleWhoHas(
 
     for (const item of items) {
       const shopName = shopMap.get(item.shop_id) ?? 'Unknown shop'
+      const borrow = borrowByItem.get(item.id)
 
-      const { data: activeBorrow } = await supabase
-        .from('borrows')
-        .select('borrower_id, due_at')
-        .eq('item_id', item.id)
-        .eq('status', 'active')
-        .limit(1)
-        .single()
-
-      if (activeBorrow) {
-        // Get borrower profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('display_name, phone')
-          .eq('id', activeBorrow.borrower_id)
-          .single()
-
+      if (borrow) {
+        const profile = profileMap.get(borrow.borrower_id)
         results.push({
           itemName: item.name,
           shopName,
           borrowerName: profile?.display_name ?? 'Someone',
           borrowerPhone: profile?.phone ?? undefined,
-          dueAt: activeBorrow.due_at
-            ? formatDate(activeBorrow.due_at)
-            : undefined,
+          dueAt: borrow.due_at ? formatDate(borrow.due_at) : undefined,
         })
       } else {
         results.push({ itemName: item.name, shopName })

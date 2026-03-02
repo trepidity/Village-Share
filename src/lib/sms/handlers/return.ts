@@ -106,19 +106,19 @@ export async function handleReturn(
       // Borrow was updated, still confirm
     }
 
-    // Get shop info for notification
-    const { data: shop } = await supabase
-      .from('shops')
-      .select('short_name, owner_id')
-      .eq('id', context.shopId)
-      .single()
-
-    // Get returner display name
-    const { data: returnerProfile } = await supabase
-      .from('profiles')
-      .select('display_name, phone')
-      .eq('id', context.userId)
-      .single()
+    // Get shop info and returner profile in parallel
+    const [{ data: shop }, { data: returnerProfile }] = await Promise.all([
+      supabase
+        .from('shops')
+        .select('short_name, owner_id')
+        .eq('id', context.shopId)
+        .single(),
+      supabase
+        .from('profiles')
+        .select('display_name, phone')
+        .eq('id', context.userId)
+        .single(),
+    ])
 
     const returnerName =
       returnerProfile?.display_name ?? returnerProfile?.phone ?? 'Someone'

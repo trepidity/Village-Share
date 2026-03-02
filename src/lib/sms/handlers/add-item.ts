@@ -23,6 +23,12 @@ export async function handleAddItem(
       return templates.addItemPrompt()
     }
 
+    // Sanitize item name: trim whitespace and enforce length limit
+    const sanitizedName = itemName.trim().slice(0, 100)
+    if (!sanitizedName) {
+      return templates.addItemPrompt()
+    }
+
     // Verify user is the shop owner
     const { data: shop, error: shopError } = await supabase
       .from('shops')
@@ -44,11 +50,11 @@ export async function handleAddItem(
       .from('items')
       .select('id')
       .eq('shop_id', context.shopId)
-      .ilike('name', itemName)
+      .ilike('name', sanitizedName)
       .limit(1)
 
     if (existing && existing.length > 0) {
-      return templates.addItemDuplicate(itemName, shop.short_name)
+      return templates.addItemDuplicate(sanitizedName, shop.short_name)
     }
 
     // Insert the new item
@@ -56,7 +62,7 @@ export async function handleAddItem(
       .from('items')
       .insert({
         shop_id: context.shopId,
-        name: itemName,
+        name: sanitizedName,
         status: 'available',
       })
 
@@ -65,7 +71,7 @@ export async function handleAddItem(
       return templates.error()
     }
 
-    return templates.addItemConfirm(itemName, shop.short_name)
+    return templates.addItemConfirm(sanitizedName, shop.short_name)
   } catch (err) {
     console.error('ADD_ITEM handler error:', err)
     return templates.error()

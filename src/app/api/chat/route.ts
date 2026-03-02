@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { parseMessage } from '@/lib/sms/parser'
 import { routeIntent, type LastIntent } from '@/lib/sms/router'
 import { buildLastIntentState } from '@/lib/sms/session'
@@ -45,8 +44,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Look up the user's phone for the router context (some handlers use it)
-    const admin = createAdminClient()
-    const { data: profile } = await admin
+    const { data: profile } = await supabase
       .from('profiles')
       .select('phone')
       .eq('id', user.id)

@@ -2,6 +2,15 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 interface SendInviteEmailParams {
   to: string;
   inviterName: string;
@@ -24,6 +33,12 @@ export async function sendInviteEmail({
 
   const roleBadge = role.charAt(0).toUpperCase() + role.slice(1);
 
+  const safeInviterName = escapeHtml(inviterName);
+  const safeVillageName = escapeHtml(villageName);
+  const safeDescription = villageDescription
+    ? escapeHtml(villageDescription)
+    : null;
+
   const html = `
 <!DOCTYPE html>
 <html>
@@ -44,11 +59,11 @@ export async function sendInviteEmail({
           <tr>
             <td style="padding:32px;">
               <p style="margin:0 0 16px;color:#3f3f46;font-size:16px;line-height:1.5;">
-                <strong>${inviterName}</strong> has invited you to join <strong>${villageName}</strong> as a <span style="display:inline-block;background-color:#e4e4e7;color:#18181b;padding:2px 8px;border-radius:4px;font-size:14px;font-weight:500;">${roleBadge}</span>.
+                <strong>${safeInviterName}</strong> has invited you to join <strong>${safeVillageName}</strong> as a <span style="display:inline-block;background-color:#e4e4e7;color:#18181b;padding:2px 8px;border-radius:4px;font-size:14px;font-weight:500;">${roleBadge}</span>.
               </p>
               ${
-                villageDescription
-                  ? `<p style="margin:0 0 24px;color:#71717a;font-size:14px;line-height:1.5;">${villageDescription}</p>`
+                safeDescription
+                  ? `<p style="margin:0 0 24px;color:#71717a;font-size:14px;line-height:1.5;">${safeDescription}</p>`
                   : ""
               }
               <table width="100%" cellpadding="0" cellspacing="0">

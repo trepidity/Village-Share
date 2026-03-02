@@ -1,46 +1,138 @@
-# VillageShare - Borrow and Loan your Stuff
+# VillageShare
 
-This application makes it possible to create a shop, kitchen, etc. place items into that location to be loaned out to friends and family.
+Community lending platform where friends and family organize into **villages**, create **shops** (lending libraries), and borrow/return items via SMS, web chat, or a dashboard UI.
 
-Friends and family are able to request, borrow, checkout, checkin items.
-Items can be reserved, and owners can put blackout dates.
+## Tech Stack
 
+| Layer | Technology |
+|---|---|
+| Frontend + API | Next.js 16 (App Router), TypeScript |
+| Database + Auth | Supabase (PostgreSQL, Auth, Storage) |
+| UI | Tailwind CSS 4, shadcn/ui |
+| SMS | Twilio (messaging + Verify) |
+| Email | Resend (transactional invites) |
+| AI/NLP | compromise.js (rule-based) + Google Gemini Flash-Lite (fallback) |
+| Testing | vitest |
 
-The whole interaction is through an AI chatbotover SMS.
+## Prerequisites
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+- Node.js 18+
+- Docker (for local Supabase)
+- [Supabase CLI](https://supabase.com/docs/guides/cli)
 
-## Getting Started
-
-First, run the development server:
+## Quick Start
 
 ```bash
+# Clone and install
+git clone <repo-url> && cd VillageShare
+npm install
+
+# Set up environment
+cp .env.local.example .env.local
+# Fill in your Supabase, Twilio, Gemini, and Resend credentials
+
+# Start local Supabase and run migrations
+npm run db:start
+npm run migrate
+
+# Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the app.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Environment Variables
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-only) |
+| `TWILIO_ACCOUNT_SID` | Twilio account SID |
+| `TWILIO_AUTH_TOKEN` | Twilio auth token |
+| `TWILIO_PHONE_NUMBER` | Twilio phone number (E.164 format) |
+| `TWILIO_VERIFY_SERVICE_SID` | Twilio Verify service SID |
+| `GEMINI_API_KEY` | Google Gemini API key |
+| `RESEND_API_KEY` | Resend API key for invite emails |
+| `NEXT_PUBLIC_APP_URL` | Public app URL (e.g. `http://localhost:3000`) |
+| `CRON_SECRET` | Secret for cron endpoint authentication |
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command | Description |
+|---|---|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm start` | Start production server |
+| `npm test` | Run tests |
+| `npm run test:watch` | Run tests in watch mode |
+| `npm run lint` | Run ESLint |
+| `npm run setup` | Initial project setup |
+| `npm run deploy` | Production deployment (tests + lint + type-check + build + Vercel) |
+| `npm run migrate` | Run migrations locally |
+| `npm run migrate:prod` | Run migrations on remote database |
+| `npm run seed` | Seed the database |
+| `npm run db:start` | Start local Supabase |
+| `npm run db:stop` | Stop local Supabase |
+| `npm run db:reset` | Reset local database |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## SMS Commands
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Text any of these to your VillageShare Twilio number:
 
-## Deploy on Vercel
+| Command | Example |
+|---|---|
+| **Borrow** | "borrow the drill", "can I get the mixer?" |
+| **Return** | "return the mixer", "bring back the drill" |
+| **Search** | "what's available?", "do you have a drill?" |
+| **Reserve** | "reserve the trailer for next Saturday" |
+| **Status** | "my borrows", "what do I have?" |
+| **Who has** | "who has the drill?" |
+| **Availability** | "is the drill available?" |
+| **Add item** | "add drill" (shop owners only) |
+| **Remove item** | "remove drill" (shop owners only) |
+| **Help** | "help", "commands" |
+| **Cancel** | "cancel my reservation for the drill" |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The parser supports natural language -- no need for exact command syntax. If the rule-based parser can't understand a message, it falls back to Gemini AI.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Project Structure
+
+```
+src/
+├── app/
+│   ├── (auth)/          # Login, OAuth callback, phone setup
+│   ├── (dashboard)/     # Dashboard, villages, shops, chat, borrows
+│   ├── invite/          # Public invite acceptance
+│   └── api/             # Chat, SMS webhook, cron, invites
+├── lib/
+│   ├── supabase/        # Client, server, admin, types
+│   ├── twilio/          # SMS client, validation, sending
+│   ├── email/           # Invite emails via Resend
+│   ├── sms/             # Parser, router, templates, handlers
+│   ├── ai/              # Gemini fallback provider
+│   ├── invites/         # Invite acceptance logic
+│   └── utils/           # Phone normalization, date formatting
+└── components/          # Dashboard nav, shadcn/ui components
+```
+
+## Testing
+
+```bash
+npm test            # Run all 87 tests
+npm run test:watch  # Watch mode
+```
+
+Tests cover the NLP parser, session/disambiguation state management, and chat API integration.
+
+## Deployment
+
+The deploy script handles the full production deployment pipeline:
+
+```bash
+npm run deploy
+```
+
+This runs: tests -> lint -> type-check -> build -> Supabase migrations -> Vercel production deploy.
+
+Before deploying, ensure all environment variables are configured in Vercel (`vercel env add <NAME>`).

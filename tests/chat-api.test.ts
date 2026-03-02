@@ -10,11 +10,6 @@ const mockSingle = vi.fn()
 vi.mock('@/lib/supabase/server', () => ({
   createClient: vi.fn(async () => ({
     auth: { getUser: mockGetUser },
-  })),
-}))
-
-vi.mock('@/lib/supabase/admin', () => ({
-  createAdminClient: vi.fn(() => ({
     from: () => ({ select: mockSelect }),
   })),
 }))

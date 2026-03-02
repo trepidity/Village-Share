@@ -91,19 +91,19 @@ export async function handleBorrow(
       // Borrow was created, so still confirm but log the issue
     }
 
-    // Get shop info for confirmation and notification
-    const { data: shop } = await supabase
-      .from('shops')
-      .select('short_name, owner_id')
-      .eq('id', context.shopId)
-      .single()
-
-    // Get borrower display name for notification
-    const { data: borrowerProfile } = await supabase
-      .from('profiles')
-      .select('display_name, phone')
-      .eq('id', context.userId)
-      .single()
+    // Get shop info and borrower profile in parallel
+    const [{ data: shop }, { data: borrowerProfile }] = await Promise.all([
+      supabase
+        .from('shops')
+        .select('short_name, owner_id')
+        .eq('id', context.shopId)
+        .single(),
+      supabase
+        .from('profiles')
+        .select('display_name, phone')
+        .eq('id', context.userId)
+        .single(),
+    ])
 
     const borrowerName =
       borrowerProfile?.display_name ?? borrowerProfile?.phone ?? 'Someone'
