@@ -176,6 +176,13 @@ export function ChatPanel() {
           placeholder="Type a message..."
           readOnly={isLoading}
           autoFocus
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck={false}
+          data-1p-ignore
+          data-lpignore="true"
+          data-form-type="other"
         />
         <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
           <Send className="h-4 w-4" />
