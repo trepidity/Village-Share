@@ -143,11 +143,12 @@ function matchHelp(lower: string): boolean {
 
 function matchStatus(lower: string): boolean {
   const statusPatterns = [
-    /^(?:my )?(?:borrows|loans|stuff|items|rentals|status)$/,
+    /^(?:my )?(?:borrows|loans|stuff|items|rentals|tools|status)$/,
     /^what (?:do )?i have\??$/,
     /^what(?:'s| is) (?:out|checked out|borrowed)\??$/,
     /^my (?:active )?(?:borrows|loans|reservations|bookings)$/,
     /^status$/,
+    /^status of (?:my )?(?:stuff|items|tools|borrows|loans|rentals|things)$/,
   ]
   return statusPatterns.some((p) => p.test(lower))
 }

@@ -183,6 +183,16 @@ describe('SMS Parser', () => {
       const result = parseMessage('my stuff')
       expect(result.type).toBe('STATUS')
     })
+
+    it('matches "status of my tools"', () => {
+      const result = parseMessage('status of my tools')
+      expect(result.type).toBe('STATUS')
+    })
+
+    it('matches "my tools"', () => {
+      const result = parseMessage('my tools')
+      expect(result.type).toBe('STATUS')
+    })
   })
 
   describe('CANCEL intent', () => {
