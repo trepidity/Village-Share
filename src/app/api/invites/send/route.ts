@@ -39,6 +39,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  if (phone && process.env.NEXT_PUBLIC_INVITE_SMS_ENABLED !== "true") {
+    return NextResponse.json(
+      { error: "SMS invites are not enabled" },
+      { status: 403 }
+    );
+  }
+
+  if (email && process.env.NEXT_PUBLIC_INVITE_EMAIL_ENABLED !== "true") {
+    return NextResponse.json(
+      { error: "Email invites are not enabled" },
+      { status: 403 }
+    );
+  }
+
   if (!["member", "admin"].includes(role)) {
     return NextResponse.json({ error: "Invalid role" }, { status: 400 });
   }

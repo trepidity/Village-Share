@@ -75,6 +75,10 @@ const roleConfig: Record<VillageRole, { label: string; icon: React.ReactNode; cl
   },
 };
 
+const smsEnabled = process.env.NEXT_PUBLIC_INVITE_SMS_ENABLED === "true";
+const emailEnabled = process.env.NEXT_PUBLIC_INVITE_EMAIL_ENABLED === "true";
+const defaultInviteTab = emailEnabled ? "email" : smsEnabled ? "sms" : "link";
+
 export default function VillageMembersPage({
   params,
 }: {
@@ -337,8 +341,10 @@ export default function VillageMembersPage({
               <DialogHeader>
                 <DialogTitle>Invite to Village</DialogTitle>
                 <DialogDescription>
-                  Send an invite via email or SMS, or generate a link to share.
-                  Anyone who clicks the link and signs in will be added.
+                  {emailEnabled || smsEnabled
+                    ? `Send an invite via ${[emailEnabled && "email", smsEnabled && "SMS"].filter(Boolean).join(" or ")}, or generate a link to share.`
+                    : "Generate a link to share."}
+                  {" "}Anyone who clicks the link and signs in will be added.
                   Invites expire in 7 days.
                 </DialogDescription>
               </DialogHeader>
@@ -373,65 +379,73 @@ export default function VillageMembersPage({
                 </div>
               </div>
 
-              <Tabs defaultValue="email" className="w-full min-w-0">
+              <Tabs defaultValue={defaultInviteTab} className="w-full min-w-0">
                 <TabsList className="w-full">
-                  <TabsTrigger value="email" className="flex-1">
-                    <Mail className="mr-1 size-3.5" />
-                    Email
-                  </TabsTrigger>
-                  <TabsTrigger value="sms" className="flex-1">
-                    <Phone className="mr-1 size-3.5" />
-                    SMS
-                  </TabsTrigger>
+                  {emailEnabled && (
+                    <TabsTrigger value="email" className="flex-1">
+                      <Mail className="mr-1 size-3.5" />
+                      Email
+                    </TabsTrigger>
+                  )}
+                  {smsEnabled && (
+                    <TabsTrigger value="sms" className="flex-1">
+                      <Phone className="mr-1 size-3.5" />
+                      SMS
+                    </TabsTrigger>
+                  )}
                   <TabsTrigger value="link" className="flex-1">
                     <Link2 className="mr-1 size-3.5" />
                     Link
                   </TabsTrigger>
                 </TabsList>
-                <TabsContent value="email" className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email address</label>
-                    <Input
-                      type="email"
-                      placeholder="name@example.com"
-                      value={inviteEmail}
-                      onChange={(e) => setInviteEmail(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    onClick={sendEmailInvite}
-                    disabled={sendingEmail || !inviteEmail}
-                    className="w-full"
-                  >
-                    {sendingEmail && (
-                      <Loader2 className="size-4 animate-spin" />
-                    )}
-                    <Mail className="size-4" />
-                    Send Email Invite
-                  </Button>
-                </TabsContent>
-                <TabsContent value="sms" className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Phone number</label>
-                    <Input
-                      type="tel"
-                      placeholder="+1 (555) 123-4567"
-                      value={invitePhone}
-                      onChange={(e) => setInvitePhone(e.target.value)}
-                    />
-                  </div>
-                  <Button
-                    onClick={sendSmsInvite}
-                    disabled={sendingPhone || !invitePhone}
-                    className="w-full"
-                  >
-                    {sendingPhone && (
-                      <Loader2 className="size-4 animate-spin" />
-                    )}
-                    <Phone className="size-4" />
-                    Send SMS Invite
-                  </Button>
-                </TabsContent>
+                {emailEnabled && (
+                  <TabsContent value="email" className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Email address</label>
+                      <Input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={inviteEmail}
+                        onChange={(e) => setInviteEmail(e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      onClick={sendEmailInvite}
+                      disabled={sendingEmail || !inviteEmail}
+                      className="w-full"
+                    >
+                      {sendingEmail && (
+                        <Loader2 className="size-4 animate-spin" />
+                      )}
+                      <Mail className="size-4" />
+                      Send Email Invite
+                    </Button>
+                  </TabsContent>
+                )}
+                {smsEnabled && (
+                  <TabsContent value="sms" className="space-y-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Phone number</label>
+                      <Input
+                        type="tel"
+                        placeholder="+1 (555) 123-4567"
+                        value={invitePhone}
+                        onChange={(e) => setInvitePhone(e.target.value)}
+                      />
+                    </div>
+                    <Button
+                      onClick={sendSmsInvite}
+                      disabled={sendingPhone || !invitePhone}
+                      className="w-full"
+                    >
+                      {sendingPhone && (
+                        <Loader2 className="size-4 animate-spin" />
+                      )}
+                      <Phone className="size-4" />
+                      Send SMS Invite
+                    </Button>
+                  </TabsContent>
+                )}
                 <TabsContent value="link" className="space-y-4">
                   <Button
                     onClick={createInvite}
