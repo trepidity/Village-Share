@@ -47,6 +47,7 @@ export interface Database {
           id: string
           name: string
           description: string | null
+          invite_token: string
           created_by: string
           created_at: string
           updated_at: string
@@ -55,11 +56,13 @@ export interface Database {
           id?: string
           name: string
           description?: string | null
+          invite_token?: string
           created_by: string
         }
         Update: {
           name?: string
           description?: string | null
+          invite_token?: string
         }
         Relationships: [
           {
@@ -99,45 +102,6 @@ export interface Database {
           {
             foreignKeyName: "village_members_user_id_fkey"
             columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      village_invites: {
-        Row: {
-          id: string
-          village_id: string
-          invited_by: string
-          token: string
-          role: VillageRole
-          accepted_at: string | null
-          expires_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          village_id: string
-          invited_by: string
-          token?: string
-          role?: VillageRole
-          expires_at?: string
-        }
-        Update: {
-          accepted_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "village_invites_village_id_fkey"
-            columns: ["village_id"]
-            isOneToOne: false
-            referencedRelation: "villages"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "village_invites_invited_by_fkey"
-            columns: ["invited_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

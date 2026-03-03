@@ -23,23 +23,22 @@ export async function acceptVillageInvite(
 ): Promise<AcceptResult> {
   const supabase = adminClient ?? createAdminClient()
 
-  // Fetch valid invite (reusable — anyone with the link can join until it expires)
-  const { data: invite, error: inviteError } = await supabase
-    .from('village_invites')
-    .select('*')
-    .eq('token', token)
-    .gt('expires_at', new Date().toISOString())
+  // Look up village by its static invite token
+  const { data: village, error: villageError } = await supabase
+    .from('villages')
+    .select('id')
+    .eq('invite_token', token)
     .single()
 
-  if (inviteError || !invite) {
-    return { success: false, error: 'Invite not found or expired' }
+  if (villageError || !village) {
+    return { success: false, error: 'Invite not found' }
   }
 
   // Check if already a member
   const { data: existingMember } = await supabase
     .from('village_members')
     .select('id')
-    .eq('village_id', invite.village_id)
+    .eq('village_id', village.id)
     .eq('user_id', userId)
     .single()
 
@@ -47,9 +46,9 @@ export async function acceptVillageInvite(
     const { error: insertError } = await supabase
       .from('village_members')
       .insert({
-        village_id: invite.village_id,
+        village_id: village.id,
         user_id: userId,
-        role: invite.role,
+        role: 'member',
       })
 
     if (insertError) {
@@ -57,5 +56,5 @@ export async function acceptVillageInvite(
     }
   }
 
-  return { success: true, villageId: invite.village_id }
+  return { success: true, villageId: village.id }
 }

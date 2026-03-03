@@ -10,17 +10,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, Clock, Home, UserPlus } from "lucide-react";
+import { AlertCircle, Home, UserPlus } from "lucide-react";
 import { InviteSignIn } from "@/components/invite-sign-in";
-import type { VillageRole } from "@/lib/supabase/types";
-
-const roleLabels: Record<VillageRole, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  member: "Member",
-};
 
 async function acceptInvite(formData: FormData) {
   "use server";
@@ -54,40 +46,15 @@ export default async function InvitePage({
   const supabase = await createClient();
   const admin = createAdminClient();
 
-  // Look up the invite using admin client (page is accessible to unauthenticated users)
-  const { data: invite } = await admin
-    .from("village_invites")
-    .select("*")
-    .eq("token", token)
+  // Look up the village by invite token (admin client — page is accessible to unauthenticated users)
+  const { data: village } = await admin
+    .from("villages")
+    .select("id, name, description")
+    .eq("invite_token", token)
     .single();
 
-  if (!invite) {
+  if (!village) {
     notFound();
-  }
-
-  // Check if expired
-  const isExpired = new Date(invite.expires_at) < new Date();
-  if (isExpired) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
-              <Clock className="size-6 text-red-600 dark:text-red-400" />
-            </div>
-            <CardTitle>Invite Expired</CardTitle>
-            <CardDescription>
-              This invite link has expired. Please ask for a new one.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button variant="outline" asChild>
-              <Link href="/">Go Home</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
   }
 
   // Auto-accept: if user is authenticated, accept immediately and redirect
@@ -102,43 +69,6 @@ export default async function InvitePage({
     }
   }
 
-  // Use admin client to bypass RLS — unauthenticated users need to see village details
-  const [{ data: village }, { data: inviter }] = await Promise.all([
-    admin
-      .from("villages")
-      .select("id, name, description")
-      .eq("id", invite.village_id)
-      .single(),
-    admin
-      .from("profiles")
-      .select("display_name")
-      .eq("id", invite.invited_by)
-      .single(),
-  ]);
-
-  if (!village) {
-    return (
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-2 flex size-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
-              <AlertCircle className="size-6 text-red-600 dark:text-red-400" />
-            </div>
-            <CardTitle>Village Not Found</CardTitle>
-            <CardDescription>
-              The village associated with this invite no longer exists.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex justify-center">
-            <Button variant="outline" asChild>
-              <Link href="/">Go Home</Link>
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card className="w-full max-w-md">
@@ -148,9 +78,7 @@ export default async function InvitePage({
           </div>
           <CardTitle>You&apos;re Invited!</CardTitle>
           <CardDescription>
-            {inviter?.display_name
-              ? `${inviter.display_name} has invited you to join a village.`
-              : "You've been invited to join a village."}
+            You&apos;ve been invited to join a village.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -160,18 +88,10 @@ export default async function InvitePage({
               <p className="text-lg font-semibold">{village.name}</p>
             </div>
             {village.description && (
-              <p className="mb-3 text-sm text-muted-foreground">
+              <p className="text-sm text-muted-foreground">
                 {village.description}
               </p>
             )}
-            <div className="flex items-center justify-center gap-2">
-              <span className="text-sm text-muted-foreground">
-                Role:
-              </span>
-              <Badge variant="secondary">
-                {roleLabels[invite.role]}
-              </Badge>
-            </div>
           </div>
 
           {user ? (
@@ -185,17 +105,6 @@ export default async function InvitePage({
           ) : (
             <InviteSignIn token={token} />
           )}
-
-          <p className="text-center text-xs text-muted-foreground">
-            This invite expires on{" "}
-            {new Date(invite.expires_at).toLocaleDateString("en-US", {
-              weekday: "long",
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            })}
-            .
-          </p>
         </CardContent>
       </Card>
     </div>

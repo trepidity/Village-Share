@@ -9,7 +9,6 @@ import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -29,22 +28,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import {
   ArrowLeft,
   Check,
   Copy,
   Crown,
-  Link2,
   Loader2,
-  Mail,
-  Phone,
+  RefreshCw,
   Shield,
   User,
   UserPlus,
@@ -54,8 +44,6 @@ import Link from "next/link";
 type VillageMember = Database["public"]["Tables"]["village_members"]["Row"] & {
   profiles: { display_name: string | null; avatar_url: string | null } | null;
 };
-
-type VillageInvite = Database["public"]["Tables"]["village_invites"]["Row"];
 
 const roleConfig: Record<VillageRole, { label: string; icon: React.ReactNode; className: string }> = {
   owner: {
@@ -75,10 +63,6 @@ const roleConfig: Record<VillageRole, { label: string; icon: React.ReactNode; cl
   },
 };
 
-const smsEnabled = process.env.NEXT_PUBLIC_INVITE_SMS_ENABLED === "true";
-const emailEnabled = process.env.NEXT_PUBLIC_INVITE_EMAIL_ENABLED === "true";
-const defaultInviteTab = emailEnabled ? "email" : smsEnabled ? "sms" : "link";
-
 export default function VillageMembersPage({
   params,
 }: {
@@ -88,23 +72,14 @@ export default function VillageMembersPage({
   const supabase = createClient();
 
   const [members, setMembers] = useState<VillageMember[]>([]);
-  const [invites, setInvites] = useState<VillageInvite[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserRole, setCurrentUserRole] = useState<VillageRole | null>(null);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [inviteRole, setInviteRole] = useState<VillageRole>("member");
-  const [creating, setCreating] = useState(false);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [sendingEmail, setSendingEmail] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
-  const [invitePhone, setInvitePhone] = useState("");
-  const [sendingPhone, setSendingPhone] = useState(false);
-  const [smsSent, setSmsSent] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState<string | null>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
+  const [error, setError] = useState("");
 
   const fetchData = useCallback(async () => {
     const {
@@ -112,24 +87,22 @@ export default function VillageMembersPage({
     } = await supabase.auth.getUser();
     if (user) setCurrentUserId(user.id);
 
-    const [{ data: membersData }, { data: invitesData }] = await Promise.all([
+    const [{ data: membersData }, { data: village }] = await Promise.all([
       supabase
         .from("village_members")
         .select("*, profiles(display_name, avatar_url)")
         .eq("village_id", villageId)
         .order("created_at"),
       supabase
-        .from("village_invites")
-        .select("*")
-        .eq("village_id", villageId)
-        .is("accepted_at", null)
-        .gte("expires_at", new Date().toISOString())
-        .order("created_at", { ascending: false }),
+        .from("villages")
+        .select("invite_token")
+        .eq("id", villageId)
+        .single(),
     ]);
 
     const typedMembers = (membersData ?? []) as unknown as VillageMember[];
     setMembers(typedMembers);
-    setInvites(invitesData ?? []);
+    setInviteToken(village?.invite_token ?? null);
 
     if (user) {
       const currentMember = typedMembers.find((m) => m.user_id === user.id);
@@ -146,100 +119,39 @@ export default function VillageMembersPage({
   const isOwnerOrAdmin =
     currentUserRole === "owner" || currentUserRole === "admin";
 
-  const createInvite = async () => {
-    setCreating(true);
-    setError("");
+  const inviteLink = inviteToken
+    ? `${window.location.origin}/invite/${inviteToken}`
+    : null;
 
-    try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not authenticated");
-
-      const token = crypto.randomUUID();
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7);
-
-      const { error: insertError } = await supabase
-        .from("village_invites")
-        .insert({
-          village_id: villageId,
-          invited_by: user.id,
-          token,
-          role: inviteRole,
-          expires_at: expiresAt.toISOString(),
-        });
-
-      if (insertError) throw new Error(insertError.message);
-
-      const link = `${window.location.origin}/invite/${token}`;
-      setGeneratedLink(link);
-      setLinkCopied(true);
-      await navigator.clipboard.writeText(link);
-      setTimeout(() => setLinkCopied(false), 2000);
-      await fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create invite");
-    } finally {
-      setCreating(false);
-    }
+  const copyInviteLink = async () => {
+    if (!inviteLink) return;
+    await navigator.clipboard.writeText(inviteLink);
+    setLinkCopied(true);
+    setTimeout(() => setLinkCopied(false), 2000);
   };
 
-  const sendEmailInvite = async () => {
-    setSendingEmail(true);
+  const regenerateLink = async () => {
+    if (!confirm("Generate a new invite link? The current link will stop working.")) return;
+    setRegenerating(true);
     setError("");
-    setEmailSent(false);
 
     try {
-      const res = await fetch("/api/invites/send", {
+      const res = await fetch("/api/invites/regenerate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ villageId, email: inviteEmail, role: inviteRole }),
+        body: JSON.stringify({ villageId }),
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send invite");
+      if (!res.ok) throw new Error(data.error || "Failed to regenerate link");
 
-      setEmailSent(true);
-      setInviteEmail("");
-      await fetchData();
+      setInviteToken(data.token);
+      setLinkCopied(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send invite");
+      setError(err instanceof Error ? err.message : "Failed to regenerate link");
     } finally {
-      setSendingEmail(false);
+      setRegenerating(false);
     }
-  };
-
-  const sendSmsInvite = async () => {
-    setSendingPhone(true);
-    setError("");
-    setSmsSent(false);
-
-    try {
-      const res = await fetch("/api/invites/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ villageId, phone: invitePhone, role: inviteRole }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to send SMS invite");
-
-      setSmsSent(true);
-      setInvitePhone("");
-      await fetchData();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send SMS invite");
-    } finally {
-      setSendingPhone(false);
-    }
-  };
-
-  const copyInviteLink = async (token: string, inviteId: string) => {
-    const link = `${window.location.origin}/invite/${token}`;
-    await navigator.clipboard.writeText(link);
-    setCopiedId(inviteId);
-    setTimeout(() => setCopiedId(null), 2000);
   };
 
   const updateMemberRole = async (memberId: string, newRole: VillageRole) => {
@@ -267,20 +179,6 @@ export default function VillageMembersPage({
       .from("village_members")
       .delete()
       .eq("id", memberId);
-
-    if (deleteError) {
-      setError(deleteError.message);
-      return;
-    }
-
-    await fetchData();
-  };
-
-  const revokeInvite = async (inviteId: string) => {
-    const { error: deleteError } = await supabase
-      .from("village_invites")
-      .delete()
-      .eq("id", inviteId);
 
     if (deleteError) {
       setError(deleteError.message);
@@ -323,11 +221,6 @@ export default function VillageMembersPage({
               setInviteOpen(open);
               if (!open) {
                 setError("");
-                setEmailSent(false);
-                setInviteEmail("");
-                setSmsSent(false);
-                setInvitePhone("");
-                setGeneratedLink(null);
                 setLinkCopied(false);
               }
             }}>
@@ -341,153 +234,54 @@ export default function VillageMembersPage({
               <DialogHeader>
                 <DialogTitle>Invite to Village</DialogTitle>
                 <DialogDescription>
-                  {emailEnabled || smsEnabled
-                    ? `Send an invite via ${[emailEnabled && "email", smsEnabled && "SMS"].filter(Boolean).join(" or ")}, or generate a link to share.`
-                    : "Generate a link to share."}
-                  {" "}Anyone who clicks the link and signs in will be added.
-                  Invites expire in 7 days.
+                  Share this link with anyone you want to invite. They&apos;ll join as a member when they sign in.
                 </DialogDescription>
               </DialogHeader>
 
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              {emailSent && (
-                <p className="text-sm text-green-600">
-                  Invite email sent successfully!
-                </p>
-              )}
-              {smsSent && (
-                <p className="text-sm text-green-600">
-                  SMS invite sent successfully!
-                </p>
-              )}
+              {error && inviteOpen && <p className="text-sm text-destructive">{error}</p>}
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Role</label>
-                  <Select
-                    value={inviteRole}
-                    onValueChange={(v) => setInviteRole(v as VillageRole)}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="member">Member</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <Tabs defaultValue={defaultInviteTab} className="w-full min-w-0">
-                <TabsList className="w-full">
-                  {emailEnabled && (
-                    <TabsTrigger value="email" className="flex-1">
-                      <Mail className="mr-1 size-3.5" />
-                      Email
-                    </TabsTrigger>
-                  )}
-                  {smsEnabled && (
-                    <TabsTrigger value="sms" className="flex-1">
-                      <Phone className="mr-1 size-3.5" />
-                      SMS
-                    </TabsTrigger>
-                  )}
-                  <TabsTrigger value="link" className="flex-1">
-                    <Link2 className="mr-1 size-3.5" />
-                    Link
-                  </TabsTrigger>
-                </TabsList>
-                {emailEnabled && (
-                  <TabsContent value="email" className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Email address</label>
-                      <Input
-                        type="email"
-                        placeholder="name@example.com"
-                        value={inviteEmail}
-                        onChange={(e) => setInviteEmail(e.target.value)}
-                      />
-                    </div>
+              {inviteLink && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-2 min-w-0">
+                    <p className="flex-1 text-sm font-mono truncate min-w-0">
+                      /invite/{inviteToken?.slice(0, 8)}...
+                    </p>
                     <Button
-                      onClick={sendEmailInvite}
-                      disabled={sendingEmail || !inviteEmail}
-                      className="w-full"
+                      variant="ghost"
+                      size="sm"
+                      className="shrink-0"
+                      onClick={copyInviteLink}
                     >
-                      {sendingEmail && (
-                        <Loader2 className="size-4 animate-spin" />
+                      {linkCopied ? (
+                        <Check className="size-4 text-green-600" />
+                      ) : (
+                        <Copy className="size-4" />
                       )}
-                      <Mail className="size-4" />
-                      Send Email Invite
                     </Button>
-                  </TabsContent>
-                )}
-                {smsEnabled && (
-                  <TabsContent value="sms" className="space-y-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Phone number</label>
-                      <Input
-                        type="tel"
-                        placeholder="+1 (555) 123-4567"
-                        value={invitePhone}
-                        onChange={(e) => setInvitePhone(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      onClick={sendSmsInvite}
-                      disabled={sendingPhone || !invitePhone}
-                      className="w-full"
-                    >
-                      {sendingPhone && (
-                        <Loader2 className="size-4 animate-spin" />
-                      )}
-                      <Phone className="size-4" />
-                      Send SMS Invite
-                    </Button>
-                  </TabsContent>
-                )}
-                <TabsContent value="link" className="space-y-4">
+                  </div>
+                  {linkCopied && (
+                    <p className="text-xs text-muted-foreground">
+                      Copied to clipboard!
+                    </p>
+                  )}
                   <Button
-                    onClick={createInvite}
-                    disabled={creating}
+                    variant="outline"
+                    onClick={regenerateLink}
+                    disabled={regenerating}
                     className="w-full"
                   >
-                    {creating && (
+                    {regenerating ? (
                       <Loader2 className="size-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="size-4" />
                     )}
-                    <Link2 className="size-4" />
-                    {generatedLink ? "Generate Another Link" : "Generate Invite Link"}
+                    Generate New Link
                   </Button>
-                  {generatedLink && (
-                    <div className="space-y-2 overflow-hidden">
-                      <div className="flex items-center gap-2 rounded-md border bg-muted/50 p-2 overflow-hidden">
-                        <p className="flex-1 text-sm font-mono truncate overflow-hidden">
-                          {generatedLink}
-                        </p>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="shrink-0"
-                          onClick={async () => {
-                            await navigator.clipboard.writeText(generatedLink);
-                            setLinkCopied(true);
-                            setTimeout(() => setLinkCopied(false), 2000);
-                          }}
-                        >
-                          {linkCopied ? (
-                            <Check className="size-4 text-green-600" />
-                          ) : (
-                            <Copy className="size-4" />
-                          )}
-                        </Button>
-                      </div>
-                      <p className="text-xs text-muted-foreground">
-                        {linkCopied ? "Copied to clipboard!" : "Link copied to clipboard. Share it with anyone you want to invite."}
-                      </p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                  <p className="text-xs text-muted-foreground">
+                    Generating a new link will invalidate the current one.
+                  </p>
+                </div>
+              )}
             </DialogContent>
           </Dialog>
         )}
@@ -559,66 +353,6 @@ export default function VillageMembersPage({
           ))}
         </CardContent>
       </Card>
-
-      {/* Pending invites */}
-      {isOwnerOrAdmin && invites.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Pending Invites ({invites.length})</CardTitle>
-            <CardDescription>
-              Share these links to invite people to your village.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {invites.map((invite) => (
-              <div
-                key={invite.id}
-                className="flex items-center gap-3 rounded-lg border p-3"
-              >
-                <Link2 className="size-5 shrink-0 text-muted-foreground" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <Badge
-                      className={`${roleConfig[invite.role].className} gap-1`}
-                    >
-                      {roleConfig[invite.role].icon}
-                      {roleConfig[invite.role].label}
-                    </Badge>
-                    <span className="text-xs text-muted-foreground">
-                      Expires{" "}
-                      {new Date(invite.expires_at).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <p className="mt-1 truncate text-xs text-muted-foreground font-mono">
-                    /invite/{invite.token.slice(0, 8)}...
-                  </p>
-                </div>
-                <div className="flex gap-1">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => copyInviteLink(invite.token, invite.id)}
-                  >
-                    {copiedId === invite.id ? (
-                      <Check className="size-4 text-green-600" />
-                    ) : (
-                      <Copy className="size-4" />
-                    )}
-                    {copiedId === invite.id ? "Copied" : "Copy Link"}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => revokeInvite(invite.id)}
-                  >
-                    Revoke
-                  </Button>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
     </div>
   );
 }
