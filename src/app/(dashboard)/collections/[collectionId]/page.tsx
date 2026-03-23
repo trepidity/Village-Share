@@ -159,10 +159,6 @@ export default async function CollectionDetailPage({
             <Package className="size-4" />
             Items
           </TabsTrigger>
-          <TabsTrigger value="members" className="gap-1.5">
-            <Users className="size-4" />
-            Members
-          </TabsTrigger>
           <TabsTrigger value="settings" className="gap-1.5">
             <Settings className="size-4" />
             Settings
@@ -249,37 +245,6 @@ export default async function CollectionDetailPage({
               ))}
             </div>
           )}
-        </TabsContent>
-
-        {/* Members tab */}
-        <TabsContent value="members" className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Members</h2>
-            {village && (
-              <Button asChild>
-                <Link href={`/villages/${village.id}/members`}>
-                  <Users className="size-4" />
-                  Manage Village Members
-                </Link>
-              </Button>
-            )}
-          </div>
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8 text-center">
-              <Users className="mb-4 size-10 text-muted-foreground" />
-              <p className="text-muted-foreground">
-                Members are managed at the village level. Anyone in the village
-                can access this collection.
-              </p>
-              {village && (
-                <Button variant="outline" className="mt-4" asChild>
-                  <Link href={`/villages/${village.id}/members`}>
-                    View Village Members
-                  </Link>
-                </Button>
-              )}
-            </CardContent>
-          </Card>
         </TabsContent>
 
         {/* Settings tab */}
