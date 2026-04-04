@@ -94,15 +94,17 @@ Improve chat UX and frontend state handling for multi-step flows.
 
 ### Task chunks
 - [ ] Persist chat session state across refresh/navigation
+- [ ] Keep persisted chat state aligned with backend shop-choice resolution
 - [ ] Make awaiting-number state clearer in UI
 - [ ] Evaluate or implement tappable numbered options in web chat
 - [ ] Harden malformed API reply handling
 - [ ] Verify chat state stays aligned with backend disambiguation state
 
 ### Micro tasks / todos
-- [ ] Decide where chat session state should persist (client storage, server, or session)
+- [ ] Decide where chat transcript + session state should persist (client storage, server, or session)
 - [ ] Implement persistence for `activeShopId`
 - [ ] Implement persistence for `lastIntent`
+- [ ] Ensure numbered shop replies can restore `activeShopId` when persisted options only contain names
 - [ ] Add UI hint when awaiting numbered reply
 - [ ] Evaluate button-based numbered choice UX
 - [ ] Add graceful fallback when API payload is incomplete
@@ -124,6 +126,7 @@ Improve chat UX and frontend state handling for multi-step flows.
 Fill remaining test coverage gaps with focused regressions and end-to-end scenarios.
 
 ### Task chunks
+- [ ] Choose and wire an executable end-to-end/browser test harness
 - [ ] Add end-to-end tests for full return flow
 - [ ] Add regressions from real production/user phrasing
 - [ ] Add ambiguous owner/shop-name tests
@@ -131,6 +134,7 @@ Fill remaining test coverage gaps with focused regressions and end-to-end scenar
 - [ ] Review coverage of numbered follow-up replies across handlers
 
 ### Micro tasks / todos
+- [ ] Decide whether end-to-end coverage should live in Playwright, Vitest browser mode, or a lighter integration-test path
 - [ ] Capture real-world return phrase variants from prior reports
 - [ ] Add smart-quote parser cases
 - [ ] Add ambiguous owner-name resolver cases
@@ -153,20 +157,20 @@ Fill remaining test coverage gaps with focused regressions and end-to-end scenar
 **GitHub:** Issue #6
 
 ### Goal
-Review query correctness and state-change safety across item/borrow/return flows.
+Review query correctness and state-change safety across item, reservation, borrow, return, and inventory-mutation flows.
 
 ### Task chunks
 - [ ] Verify shop resolution respects visibility/membership rules
 - [ ] Review fuzzy item matching for false positives
-- [ ] Review whether borrow/item updates should be transactional
-- [ ] Check for race conditions around shared item actions
+- [ ] Review whether borrow/return/reservation/item updates should be transactional
+- [ ] Check for race conditions around shared item and reservation actions
 - [ ] Verify return location/home shop semantics are consistent in stored data
 
 ### Micro tasks / todos
 - [ ] Review `resolveShopByName` visibility boundaries
 - [ ] Review fuzzy item matching in borrow/search/reserve/who-has/availability
-- [ ] Identify state changes that should be transactional
-- [ ] Identify potential concurrent borrow/return race windows
+- [ ] Identify state changes that should be transactional across borrow/return/reserve/add/remove flows
+- [ ] Identify potential concurrent borrow/return/reservation race windows
 - [ ] Add regression coverage for any corrected data-integrity issue
 
 ### Micro-tests

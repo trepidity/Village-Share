@@ -5,6 +5,7 @@ import { routeIntent, type LastIntent } from '@/lib/sms/router'
 import { buildLastIntentState } from '@/lib/sms/session'
 import { templates } from '@/lib/sms/templates'
 import { logChatEvent } from '@/lib/sms/logger'
+import { resolveShopByName } from '@/lib/sms/utils/resolve-shop'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -55,23 +56,20 @@ export async function POST(request: NextRequest) {
       .eq('id', user.id)
       .single()
 
+    const currentActiveShopId = activeShopId ?? null
+
     // Route the intent
     const reply = await routeIntent(intent, {
       userId: user.id,
       phone: profile?.phone ?? '',
-      activeShopId: activeShopId ?? null,
+      activeShopId: currentActiveShopId,
       lastIntent: lastIntent ?? null,
       source: 'chat',
     })
 
     logChatEvent('chat', user.id, intent, aiFallbackUsed, reply, startTime)
 
-    // Compute updated disambiguation state
-    const newLastIntent = buildLastIntentState(intent, reply, {
-      shopId: activeShopId ?? null,
-    })
-
-    let nextActiveShopId = activeShopId ?? null
+    let nextActiveShopId = currentActiveShopId
     if (
       lastIntent?.awaiting_choice?.choice_kind === 'shop' &&
       intent.entities.choiceIndex != null &&
@@ -79,8 +77,20 @@ export async function POST(request: NextRequest) {
     ) {
       const chosenOption =
         lastIntent.awaiting_choice.options[intent.entities.choiceIndex - 1]
-      nextActiveShopId = chosenOption?.id ?? nextActiveShopId
+
+      if (chosenOption?.id) {
+        nextActiveShopId = chosenOption.id
+      } else if (chosenOption?.name) {
+        nextActiveShopId =
+          (await resolveShopByName(user.id, chosenOption.name)) ?? nextActiveShopId
+      }
     }
+
+    // Compute updated disambiguation state using the resolved shop context from
+    // any just-completed shop-choice reply.
+    const newLastIntent = buildLastIntentState(intent, reply, {
+      shopId: nextActiveShopId,
+    })
 
     return NextResponse.json({
       reply,

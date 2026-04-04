@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Send, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import type { LastIntent } from "@/lib/sms/session"
 
 interface Message {
   id: string
@@ -14,7 +15,12 @@ interface Message {
 
 interface SessionState {
   activeShopId: string | null
-  lastIntent: unknown
+  lastIntent: LastIntent | null
+}
+
+interface PersistedChatState {
+  messages: Message[]
+  session: SessionState
 }
 
 const GREETING = `Welcome to VillageShare!
@@ -34,19 +40,76 @@ REMOVE [item] - remove an item from your collection
 
 You can also just ask me anything in plain English — I'll do my best to understand what you need.`
 
+const STORAGE_KEY = "villageshare.chat-state"
+const DEFAULT_MESSAGES: Message[] = [{ id: "greeting", role: "bot", text: GREETING }]
+const DEFAULT_SESSION: SessionState = {
+  activeShopId: null,
+  lastIntent: null,
+}
+
 export function ChatPanel() {
-  const [messages, setMessages] = useState<Message[]>([
-    { id: "greeting", role: "bot", text: GREETING },
-  ])
+  const [messages, setMessages] = useState<Message[]>(DEFAULT_MESSAGES)
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const [session, setSession] = useState<SessionState>({
-    activeShopId: null,
-    lastIntent: null,
-  })
+  const [session, setSession] = useState<SessionState>(DEFAULT_SESSION)
+  const [hasHydrated, setHasHydrated] = useState(false)
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const awaitingChoice = session.lastIntent?.awaiting_choice
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(STORAGE_KEY)
+      if (!raw) {
+        setHasHydrated(true)
+        return
+      }
+
+      const parsed = JSON.parse(raw) as Partial<PersistedChatState>
+
+      if (Array.isArray(parsed.messages) && parsed.messages.length > 0) {
+        setMessages(
+          parsed.messages.filter(
+            (msg): msg is Message =>
+              !!msg &&
+              typeof msg.id === "string" &&
+              (msg.role === "user" || msg.role === "bot") &&
+              typeof msg.text === "string"
+          )
+        )
+      }
+
+      if (parsed.session) {
+        setSession({
+          activeShopId:
+            typeof parsed.session.activeShopId === "string"
+              ? parsed.session.activeShopId
+              : null,
+          lastIntent:
+            parsed.session.lastIntent &&
+            typeof parsed.session.lastIntent === "object"
+              ? parsed.session.lastIntent
+              : null,
+        })
+      }
+    } catch {
+      window.localStorage.removeItem(STORAGE_KEY)
+    } finally {
+      setHasHydrated(true)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!hasHydrated) return
+
+    const payload: PersistedChatState = {
+      messages,
+      session,
+    }
+
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
+  }, [hasHydrated, messages, session])
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -72,12 +135,9 @@ export function ChatPanel() {
     setTimeout(() => inputRef.current?.focus(), 0)
   }, [])
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault()
-    const text = input.trim()
+  async function sendMessage(text: string) {
     if (!text || isLoading) return
 
-    // Add user message
     const userMsg: Message = {
       id: `user-${Date.now()}`,
       role: "user",
@@ -98,17 +158,42 @@ export function ChatPanel() {
         }),
       })
 
-      const data = await res.json()
+      let payload: Record<string, unknown> | null = null
+      try {
+        const data = (await res.json()) as unknown
+        if (data && typeof data === "object") {
+          payload = data as Record<string, unknown>
+        }
+      } catch {
+        payload = null
+      }
 
-      setSession({
-        activeShopId: data.activeShopId ?? session.activeShopId,
-        lastIntent: data.lastIntent ?? null,
-      })
+      if (payload) {
+        setSession((current) => ({
+          activeShopId:
+            typeof payload?.activeShopId === "string"
+              ? payload.activeShopId
+              : payload?.activeShopId === null
+                ? null
+                : current.activeShopId,
+          lastIntent:
+            payload && "lastIntent" in payload
+              ? (payload.lastIntent as LastIntent | null)
+              : current.lastIntent,
+        }))
+      }
+
+      const fallbackReply = !res.ok
+        ? typeof payload?.error === "string"
+          ? payload.error
+          : "Something went wrong. Please try again."
+        : "Something went wrong. Please try again."
 
       const botMsg: Message = {
         id: `bot-${Date.now()}`,
         role: "bot",
-        text: data.reply ?? "Something went wrong. Please try again.",
+        text:
+          typeof payload?.reply === "string" ? payload.reply : fallbackReply,
       }
       setMessages((prev) => [...prev, botMsg])
     } catch {
@@ -123,6 +208,11 @@ export function ChatPanel() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    await sendMessage(input.trim())
   }
 
   return (
@@ -164,6 +254,30 @@ export function ChatPanel() {
       </div>
 
       {/* Input area — sticky with safe-area padding for mobile keyboards */}
+      {awaitingChoice && awaitingChoice.options && awaitingChoice.options.length > 0 && (
+        <div className="border-t px-1 pt-3">
+          <p className="text-sm text-muted-foreground">
+            Select an option or reply with its number.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {awaitingChoice.options.map((option, index) => (
+              <Button
+                key={`${option.name}-${index}`}
+                type="button"
+                variant="outline"
+                size="sm"
+                disabled={isLoading}
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => {
+                  void sendMessage(String(index + 1))
+                }}
+              >
+                {index + 1}. {option.name}
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
       <form
         onSubmit={handleSubmit}
         autoComplete="off"
