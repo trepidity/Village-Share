@@ -19,6 +19,8 @@ export function buildLastIntentState(
   const numberedLines = lines.filter((line) => /^\d+\.\s/.test(line.trim()))
 
   if (numberedLines.length >= 2) {
+    const isShopChoice = responseText.toLowerCase().includes('multiple collections')
+
     // Extract option names from numbered lines
     const options = numberedLines.map((line) => {
       const match = line.match(/^\d+\.\s+(.+?)(?:\s+\(.+\))?$/)
@@ -31,10 +33,13 @@ export function buildLastIntentState(
         intent_type: intent.type,
         options,
         extra_entities: {
+          itemName: intent.entities.itemName,
+          locationName: intent.entities.locationName,
           date: intent.entities.date,
           dateEnd: intent.entities.dateEnd,
         },
         shop_id: null, // will use session's activeShopId as fallback
+        choice_kind: isShopChoice ? 'shop' : 'item',
       },
     }
   }

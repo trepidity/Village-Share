@@ -19,6 +19,7 @@ export interface AwaitingChoice {
   intent_type: string
   shop_id?: string | null
   extra_entities?: Record<string, string>
+  choice_kind?: 'item' | 'shop'
 }
 
 export interface LastIntent {
@@ -245,20 +246,28 @@ async function resolveDisambiguation(
   const chosen = options[choiceIndex - 1]
 
   // Re-create an intent with the resolved item and dispatch
+  const choiceKind = awaiting_choice.choice_kind ?? 'item'
+
   const resolvedIntent: ParsedIntent = {
     type: originalType as ParsedIntent['type'],
     confidence: 1.0,
-    entities: {
-      itemName: chosen.name,
-      ...awaiting_choice.extra_entities,
-    },
+    entities:
+      choiceKind === 'shop'
+        ? {
+            ...awaiting_choice.extra_entities,
+            shopName: chosen.name,
+          }
+        : {
+            ...awaiting_choice.extra_entities,
+            itemName: chosen.name,
+          },
     raw: String(choiceIndex),
   }
 
   // Clear awaiting_choice so we don't loop
   const freshContext: SmsContext = {
     ...context,
-    activeShopId: shopId,
+    activeShopId: choiceKind === 'shop' ? chosen.id : shopId,
     lastIntent: null,
   }
 
@@ -312,7 +321,7 @@ async function resolveShop(
 
   return {
     error:
-      `You belong to multiple collections. Text "use [name]" to pick one:\n` +
+      `You belong to multiple collections. Reply with a number to pick one:\n` +
       shopNames.map((n, i) => `${i + 1}. ${n}`).join('\n'),
   }
 }
