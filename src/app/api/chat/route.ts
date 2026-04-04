@@ -69,9 +69,20 @@ export async function POST(request: NextRequest) {
     // Compute updated disambiguation state
     const newLastIntent = buildLastIntentState(intent, reply)
 
+    let nextActiveShopId = activeShopId ?? null
+    if (
+      lastIntent?.awaiting_choice?.choice_kind === 'shop' &&
+      intent.entities.choiceIndex != null &&
+      Array.isArray(lastIntent.awaiting_choice.options)
+    ) {
+      const chosenOption =
+        lastIntent.awaiting_choice.options[intent.entities.choiceIndex - 1]
+      nextActiveShopId = chosenOption?.id ?? nextActiveShopId
+    }
+
     return NextResponse.json({
       reply,
-      activeShopId: activeShopId ?? null,
+      activeShopId: nextActiveShopId,
       lastIntent: newLastIntent,
     })
   } catch (err) {

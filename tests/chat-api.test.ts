@@ -141,4 +141,38 @@ describe('/api/chat POST', () => {
       expect.objectContaining({ source: 'chat' })
     )
   })
+
+  it('updates activeShopId after a shop-choice reply', async () => {
+    const { parseMessage } = await import('@/lib/sms/parser')
+    const { buildLastIntentState } = await import('@/lib/sms/session')
+
+    vi.mocked(parseMessage).mockReturnValue({
+      type: 'UNKNOWN',
+      confidence: 1,
+      entities: { choiceIndex: 3 },
+      raw: '3',
+    })
+    vi.mocked(buildLastIntentState).mockReturnValue(null)
+
+    const res = await POST(
+      makeRequest({
+        message: '3',
+        activeShopId: null,
+        lastIntent: {
+          awaiting_choice: {
+            intent_type: 'RETURN',
+            choice_kind: 'shop',
+            options: [
+              { id: 'shop-1', name: 'One' },
+              { id: 'shop-2', name: 'Two' },
+              { id: 'shop-3', name: 'Three' },
+            ],
+          },
+        },
+      })
+    )
+
+    const body = await res.json()
+    expect(body.activeShopId).toBe('shop-3')
+  })
 })
