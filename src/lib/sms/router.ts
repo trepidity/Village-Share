@@ -95,6 +95,16 @@ export async function routeIntent(
         if (byName) shopId = byName
       }
 
+      // For RETURN, allow the explicit return location to double as the
+      // collection context when it resolves unambiguously.
+      if (!shopId && intent.type === 'RETURN' && intent.entities.locationName) {
+        const byLocation = await resolveShopByName(
+          context.userId,
+          intent.entities.locationName
+        )
+        if (byLocation) shopId = byLocation
+      }
+
       // Fall back to generic resolution if still no shop
       if (!shopId) {
         const resolved = await resolveShop(context.userId)
