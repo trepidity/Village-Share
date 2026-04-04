@@ -192,6 +192,27 @@ describe('SMS Parser', () => {
       expect(result.entities.locationName).toBe('daniels')
     })
 
+    it('extracts locationName from "return 16\' trailer at Jaben\'s shop"', () => {
+      const result = parseMessage("return 16' trailer at Jaben's shop")
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe("16' trailer")
+      expect(result.entities.locationName).toBe('jaben')
+    })
+
+    it('extracts shopName from "return trailer to my shop"', () => {
+      const result = parseMessage('return trailer to my shop')
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('trailer')
+      expect(result.entities.shopName).toBe('my shop')
+    })
+
+    it('extracts locationName from "return trailer at my shop"', () => {
+      const result = parseMessage('return trailer at my shop')
+      expect(result.type).toBe('RETURN')
+      expect(result.entities.itemName).toBe('trailer')
+      expect(result.entities.locationName).toBe('my shop')
+    })
+
     it('does not set locationName when not present', () => {
       const result = parseMessage('return the drill')
       expect(result.type).toBe('RETURN')

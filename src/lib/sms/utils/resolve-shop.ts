@@ -1,5 +1,16 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 
+function normalizeShopSearch(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\bmy\s+(shop|collection|kitchen|workshop|craft room|library|garage|closet|place)\b/g, 'my')
+    .replace(/'s\b/g, '')
+    .replace(/\b(shop|collection|kitchen|workshop|craft room|library|garage|closet|place)\b/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 /**
  * Try to resolve a shop by name or owner display name.
  * Searches only among shops in villages the user belongs to.
@@ -30,14 +41,27 @@ export async function resolveShopByName(
 
   if (error || !shops || shops.length === 0) return null
 
-  const nameLower = shopName.toLowerCase()
+  const normalizedQuery = normalizeShopSearch(shopName)
+  const nameLower = shopName.toLowerCase().trim()
 
-  // Try matching by shop name or short_name
-  const byShopName = shops.filter(
-    (shop) =>
+  if (normalizedQuery === 'my') {
+    const myShops = shops.filter((shop) => shop.owner_id === userId)
+    if (myShops.length === 1) return myShops[0].id
+    return null
+  }
+
+  // Try matching by normalized shop name or short_name first
+  const byShopName = shops.filter((shop) => {
+    const normalizedName = normalizeShopSearch(shop.name)
+    const normalizedShortName = normalizeShopSearch(shop.short_name)
+
+    return (
+      normalizedName.includes(normalizedQuery) ||
+      normalizedShortName.includes(normalizedQuery) ||
       shop.name.toLowerCase().includes(nameLower) ||
       shop.short_name.toLowerCase().includes(nameLower)
-  )
+    )
+  })
 
   if (byShopName.length === 1) return byShopName[0].id
 
@@ -48,10 +72,18 @@ export async function resolveShopByName(
     .from('profiles')
     .select('id, display_name')
     .in('id', ownerIds)
-    .ilike('display_name', `%${shopName}%`)
 
-  if (profiles && profiles.length === 1) {
-    const matchingOwner = profiles[0]
+  const profileMatches =
+    profiles?.filter((profile) => {
+      const normalizedDisplayName = normalizeShopSearch(profile.display_name ?? '')
+      return (
+        normalizedDisplayName.includes(normalizedQuery) ||
+        profile.display_name?.toLowerCase().includes(nameLower)
+      )
+    }) ?? []
+
+  if (profileMatches.length === 1) {
+    const matchingOwner = profileMatches[0]
     const match = shops.find((s) => s.owner_id === matchingOwner.id)
     if (match) return match.id
   }
