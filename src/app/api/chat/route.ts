@@ -67,7 +67,9 @@ export async function POST(request: NextRequest) {
     logChatEvent('chat', user.id, intent, aiFallbackUsed, reply, startTime)
 
     // Compute updated disambiguation state
-    const newLastIntent = buildLastIntentState(intent, reply)
+    const newLastIntent = buildLastIntentState(intent, reply, {
+      shopId: activeShopId ?? null,
+    })
 
     let nextActiveShopId = activeShopId ?? null
     if (

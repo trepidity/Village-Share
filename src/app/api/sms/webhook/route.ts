@@ -118,7 +118,9 @@ export async function POST(request: NextRequest) {
 
     // Build last_intent state for session persistence
     // If the response contains disambiguation options, store them
-    const lastIntentState = buildLastIntentState(intent, responseText)
+    const lastIntentState = buildLastIntentState(intent, responseText, {
+      shopId: session.active_shop_id,
+    })
 
     // Update session: last_active_at and last_intent
     await supabase

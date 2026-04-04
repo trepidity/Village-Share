@@ -68,13 +68,24 @@ describe('buildLastIntentState', () => {
     expect(options[1].name).toBe('Saw')
   })
 
-  it('sets shop_id to null', () => {
+  it('sets shop_id to null by default', () => {
     const intent = makeIntent()
     const response = '1. Drill\n2. Saw'
     const result = buildLastIntentState(intent, response) as Record<string, unknown>
     const awaiting = result.awaiting_choice as Record<string, unknown>
 
     expect(awaiting.shop_id).toBeNull()
+  })
+
+  it('preserves provided shop_id in awaiting choice state', () => {
+    const intent = makeIntent({ type: 'BORROW' })
+    const response = '1. Drill\n2. Saw'
+    const result = buildLastIntentState(intent, response, {
+      shopId: 'shop-123',
+    }) as Record<string, unknown>
+    const awaiting = result.awaiting_choice as Record<string, unknown>
+
+    expect(awaiting.shop_id).toBe('shop-123')
   })
 
   it('detects "multiple shops" response as disambiguation', () => {

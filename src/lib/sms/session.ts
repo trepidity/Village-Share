@@ -11,7 +11,10 @@ export type { LastIntent, AwaitingChoice } from '@/lib/sms/router'
  */
 export function buildLastIntentState(
   intent: ParsedIntent,
-  responseText: string
+  responseText: string,
+  context?: {
+    shopId?: string | null
+  }
 ): Json | null {
   // Check if the response looks like a disambiguation list
   // Pattern: numbered lines like "1. Item name"
@@ -22,7 +25,7 @@ export function buildLastIntentState(
     const isShopChoice = responseText.toLowerCase().includes('multiple collections')
 
     // Extract option names from numbered lines
-    const options = numberedLines.map((line) => {
+    const parsedOptions = numberedLines.map((line) => {
       const match = line.match(/^\d+\.\s+(.+?)(?:\s+\(.+\))?$/)
       const name = match ? match[1].trim() : line.replace(/^\d+\.\s+/, '').trim()
       return { id: '', name }
@@ -31,14 +34,14 @@ export function buildLastIntentState(
     return {
       awaiting_choice: {
         intent_type: intent.type,
-        options,
+        options: parsedOptions,
         extra_entities: {
           itemName: intent.entities.itemName,
           locationName: intent.entities.locationName,
           date: intent.entities.date,
           dateEnd: intent.entities.dateEnd,
         },
-        shop_id: null, // will use session's activeShopId as fallback
+        shop_id: context?.shopId ?? null,
         choice_kind: isShopChoice ? 'shop' : 'item',
       },
     }
