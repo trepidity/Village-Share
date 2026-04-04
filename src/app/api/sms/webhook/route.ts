@@ -3,7 +3,7 @@ import { validateTwilioSignature } from '@/lib/twilio/validate'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { parseMessage } from '@/lib/sms/parser'
 import { routeIntent, type LastIntent } from '@/lib/sms/router'
-import { buildLastIntentState } from '@/lib/sms/session'
+import { buildLastIntentState, resolveNextActiveShopId } from '@/lib/sms/session'
 import { templates } from '@/lib/sms/templates'
 import { logChatEvent } from '@/lib/sms/logger'
 
@@ -116,16 +116,23 @@ export async function POST(request: NextRequest) {
 
     logChatEvent('sms', session.user_id, intent, aiFallbackUsed, responseText, startTime)
 
+    const nextActiveShopId = await resolveNextActiveShopId(intent, {
+      userId: session.user_id,
+      activeShopId: session.active_shop_id,
+      lastIntent: session.last_intent as LastIntent | null,
+    })
+
     // Build last_intent state for session persistence
     // If the response contains disambiguation options, store them
     const lastIntentState = buildLastIntentState(intent, responseText, {
-      shopId: session.active_shop_id,
+      shopId: nextActiveShopId,
     })
 
     // Update session: last_active_at and last_intent
     await supabase
       .from('sms_sessions')
       .update({
+        active_shop_id: nextActiveShopId,
         last_active_at: new Date().toISOString(),
         last_intent: lastIntentState,
       })
@@ -137,4 +144,3 @@ export async function POST(request: NextRequest) {
     return twiml(templates.error())
   }
 }
-

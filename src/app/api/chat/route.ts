@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { parseMessage } from '@/lib/sms/parser'
 import { routeIntent, type LastIntent } from '@/lib/sms/router'
-import { buildLastIntentState } from '@/lib/sms/session'
+import { buildLastIntentState, resolveNextActiveShopId } from '@/lib/sms/session'
 import { templates } from '@/lib/sms/templates'
 import { logChatEvent } from '@/lib/sms/logger'
-import { resolveShopByName } from '@/lib/sms/utils/resolve-shop'
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -69,22 +68,11 @@ export async function POST(request: NextRequest) {
 
     logChatEvent('chat', user.id, intent, aiFallbackUsed, reply, startTime)
 
-    let nextActiveShopId = currentActiveShopId
-    if (
-      lastIntent?.awaiting_choice?.choice_kind === 'shop' &&
-      intent.entities.choiceIndex != null &&
-      Array.isArray(lastIntent.awaiting_choice.options)
-    ) {
-      const chosenOption =
-        lastIntent.awaiting_choice.options[intent.entities.choiceIndex - 1]
-
-      if (chosenOption?.id) {
-        nextActiveShopId = chosenOption.id
-      } else if (chosenOption?.name) {
-        nextActiveShopId =
-          (await resolveShopByName(user.id, chosenOption.name)) ?? nextActiveShopId
-      }
-    }
+    const nextActiveShopId = await resolveNextActiveShopId(intent, {
+      userId: user.id,
+      activeShopId: currentActiveShopId,
+      lastIntent: lastIntent ?? null,
+    })
 
     // Compute updated disambiguation state using the resolved shop context from
     // any just-completed shop-choice reply.

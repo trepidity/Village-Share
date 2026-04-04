@@ -1,5 +1,7 @@
 import type { ParsedIntent } from '@/lib/sms/intents'
+import type { AwaitingChoice, LastIntent } from '@/lib/sms/router'
 import type { Json } from '@/lib/supabase/types'
+import { resolveShopByName } from '@/lib/sms/utils/resolve-shop'
 
 export type { LastIntent, AwaitingChoice } from '@/lib/sms/router'
 
@@ -49,4 +51,69 @@ export function buildLastIntentState(
 
   // No disambiguation - clear the state
   return null
+}
+
+function resolveChoiceIndex(
+  intent: ParsedIntent,
+  awaitingChoice: AwaitingChoice
+): number | null {
+  if (intent.entities.choiceIndex != null) {
+    return intent.entities.choiceIndex
+  }
+
+  const options = awaitingChoice.options ?? []
+  if (options.length === 0) return null
+
+  const input = intent.raw.trim().toLowerCase()
+  if (!input) return null
+
+  const matches: number[] = []
+  for (let i = 0; i < options.length; i++) {
+    if (options[i].name.toLowerCase().includes(input)) {
+      matches.push(i + 1)
+    }
+  }
+
+  return matches.length === 1 ? matches[0] : null
+}
+
+export async function resolveNextActiveShopId(
+  intent: ParsedIntent,
+  context: {
+    userId: string
+    activeShopId: string | null
+    lastIntent: LastIntent | null
+  }
+): Promise<string | null> {
+  const awaitingChoice = context.lastIntent?.awaiting_choice
+  if (
+    !awaitingChoice ||
+    awaitingChoice.choice_kind !== 'shop' ||
+    !Array.isArray(awaitingChoice.options)
+  ) {
+    return context.activeShopId
+  }
+
+  const choiceIndex = resolveChoiceIndex(intent, awaitingChoice)
+  if (choiceIndex == null) {
+    return context.activeShopId
+  }
+
+  const chosenOption = awaitingChoice.options[choiceIndex - 1]
+  if (!chosenOption) {
+    return context.activeShopId
+  }
+
+  if (chosenOption.id) {
+    return chosenOption.id
+  }
+
+  if (!chosenOption.name) {
+    return context.activeShopId
+  }
+
+  return (
+    (await resolveShopByName(context.userId, chosenOption.name)) ??
+    context.activeShopId
+  )
 }

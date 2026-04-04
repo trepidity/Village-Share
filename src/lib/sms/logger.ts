@@ -14,6 +14,20 @@ interface ChatLogEntry {
   durationMs: number
 }
 
+interface RouterLogEntry {
+  event: 'router_trace'
+  timestamp: string
+  source: 'chat' | 'sms'
+  userId: string
+  stage:
+    | 'shop_resolved'
+    | 'pending_choice'
+    | 'choice_replayed'
+    | 'fallback_help'
+  intent: string
+  details: Record<string, unknown>
+}
+
 export function logChatEvent(
   source: 'chat' | 'sms',
   userId: string,
@@ -34,6 +48,25 @@ export function logChatEvent(
     entities: intent.entities,
     response,
     durationMs: Date.now() - startTime,
+  }
+  console.log(JSON.stringify(entry))
+}
+
+export function logRouterEvent(
+  source: 'chat' | 'sms',
+  userId: string,
+  intent: string,
+  stage: RouterLogEntry['stage'],
+  details: Record<string, unknown>
+): void {
+  const entry: RouterLogEntry = {
+    event: 'router_trace',
+    timestamp: new Date().toISOString(),
+    source,
+    userId,
+    stage,
+    intent,
+    details,
   }
   console.log(JSON.stringify(entry))
 }

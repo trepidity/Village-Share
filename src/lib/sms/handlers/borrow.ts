@@ -65,7 +65,26 @@ export async function handleBorrow(
     const dueAt = new Date(now)
     dueAt.setDate(dueAt.getDate() + 14)
 
-    // Create borrow record
+    // Claim the item before inserting the borrow so concurrent requests cannot
+    // both proceed on the same "available" read.
+    const { data: claimedItems, error: claimError } = await supabase
+      .from('items')
+      .update({ status: 'borrowed' })
+      .eq('id', item.id)
+      .eq('status', 'available')
+      .select('id')
+
+    if (claimError) {
+      console.error('Item claim error:', claimError)
+      return templates.error()
+    }
+
+    if (!claimedItems || claimedItems.length === 0) {
+      return templates.itemUnavailable(item.name, 'borrowed')
+    }
+
+    // Create the borrow after the claim succeeds. Roll back the item status if
+    // the insert fails so item and borrow state stay aligned.
     const { error: borrowError } = await supabase.from('borrows').insert({
       item_id: item.id,
       borrower_id: context.userId,
@@ -77,18 +96,18 @@ export async function handleBorrow(
 
     if (borrowError) {
       console.error('Borrow insert error:', borrowError)
+
+      const { error: rollbackError } = await supabase
+        .from('items')
+        .update({ status: 'available' })
+        .eq('id', item.id)
+        .eq('status', 'borrowed')
+
+      if (rollbackError) {
+        console.error('Borrow rollback error:', rollbackError)
+      }
+
       return templates.error()
-    }
-
-    // Update item status to borrowed
-    const { error: updateError } = await supabase
-      .from('items')
-      .update({ status: 'borrowed' })
-      .eq('id', item.id)
-
-    if (updateError) {
-      console.error('Item status update error:', updateError)
-      // Borrow was created, so still confirm but log the issue
     }
 
     // Get shop info and borrower profile in parallel

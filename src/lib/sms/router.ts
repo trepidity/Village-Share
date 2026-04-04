@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { logRouterEvent } from '@/lib/sms/logger'
 import { templates } from '@/lib/sms/templates'
 import type { ParsedIntent } from '@/lib/sms/intents'
 import { resolveShopByName } from '@/lib/sms/utils/resolve-shop'
@@ -32,6 +33,10 @@ interface SmsContext {
   activeShopId: string | null
   lastIntent: LastIntent | null
   source?: 'chat' | 'sms'
+}
+
+function sourceOf(context: SmsContext): 'chat' | 'sms' {
+  return context.source ?? 'sms'
 }
 
 /**
@@ -110,10 +115,43 @@ export async function routeIntent(
         const resolved = await resolveShop(context.userId)
 
         if (resolved.error) {
+          if (resolved.options && resolved.options.length > 1) {
+            logRouterEvent(
+              sourceOf(context),
+              context.userId,
+              intent.type,
+              'pending_choice',
+              {
+                choiceKind: 'shop',
+                optionsCount: resolved.options.length,
+                activeShopId: context.activeShopId,
+              }
+            )
+          }
           return resolved.error
         }
 
         shopId = resolved.shopId!
+      }
+
+      if (shopId) {
+        logRouterEvent(
+          sourceOf(context),
+          context.userId,
+          intent.type,
+          'shop_resolved',
+          {
+            activeShopId: context.activeShopId,
+            resolvedShopId: shopId,
+            resolutionSource: intent.entities.shopName
+              ? 'shop_name'
+              : intent.type === 'RETURN' && intent.entities.locationName
+                ? 'location_name_or_default'
+                : context.activeShopId
+                  ? 'active_shop'
+                  : 'membership_fallback',
+          }
+        )
       }
     }
 
@@ -187,6 +225,16 @@ export async function routeIntent(
 
       case 'UNKNOWN':
       default: {
+        logRouterEvent(
+          sourceOf(context),
+          context.userId,
+          intent.type,
+          'fallback_help',
+          {
+            activeShopId: context.activeShopId,
+            hadPendingChoice: !!context.lastIntent?.awaiting_choice,
+          }
+        )
         const admin = createAdminClient()
         await admin.from('unrecognized_messages').insert({
           user_id: context.userId,
@@ -253,10 +301,22 @@ async function resolveDisambiguation(
     return `Please reply with a number between 1 and ${options.length}.`
   }
 
+  const choiceKind = awaiting_choice.choice_kind ?? 'item'
   const chosen = options[choiceIndex - 1]
+  logRouterEvent(
+    sourceOf(context),
+    context.userId,
+    originalType,
+    'choice_replayed',
+    {
+      choiceIndex,
+      choiceKind,
+      chosenName: chosen?.name ?? null,
+      storedShopId: shopId,
+    }
+  )
 
   // Re-create an intent with the resolved item and dispatch
-  const choiceKind = awaiting_choice.choice_kind ?? 'item'
 
   const resolvedIntent: ParsedIntent = {
     type: originalType as ParsedIntent['type'],
@@ -292,7 +352,7 @@ async function resolveDisambiguation(
  */
 async function resolveShop(
   userId: string
-): Promise<{ shopId?: string; error?: string }> {
+): Promise<{ shopId?: string; error?: string; options?: string[] }> {
   const supabase = createAdminClient()
 
   // Query village_members to get user's villages, then find shops in those villages
@@ -330,6 +390,7 @@ async function resolveShop(
   const shopNames = memberships.map((m) => m.short_name)
 
   return {
+    options: shopNames,
     error:
       `You belong to multiple collections. Reply with a number to pick one:\n` +
       shopNames.map((n, i) => `${i + 1}. ${n}`).join('\n'),

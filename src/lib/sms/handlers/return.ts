@@ -80,22 +80,31 @@ export async function handleReturn(
       }
     }
 
-    // Update borrow record
-    const { error: updateBorrowError } = await supabase
+    // Update the active borrow first. The extra status guard prevents a stale
+    // second return from mutating an already-closed borrow.
+    const returnedAt = new Date().toISOString()
+    const { data: updatedBorrows, error: updateBorrowError } = await supabase
       .from('borrows')
       .update({
         status: 'returned',
-        returned_at: new Date().toISOString(),
+        returned_at: returnedAt,
         return_shop_id: locationShopId,
       })
       .eq('id', matchingBorrow.id)
+      .eq('status', 'active')
+      .select('id')
 
     if (updateBorrowError) {
       console.error('Return borrow update error:', updateBorrowError)
       return templates.error()
     }
 
-    // Update item status back to available and set physical location
+    if (!updatedBorrows || updatedBorrows.length === 0) {
+      return `The ${matchedItem.name} is no longer checked out. Text STATUS to see your active borrows.`
+    }
+
+    // Update item status back to available and set physical location. If this
+    // fails, roll the borrow back to active so the two records stay aligned.
     const { error: updateItemError } = await supabase
       .from('items')
       .update({ status: 'available', location_shop_id: locationShopId })
@@ -103,7 +112,21 @@ export async function handleReturn(
 
     if (updateItemError) {
       console.error('Return item update error:', updateItemError)
-      // Borrow was updated, still confirm
+
+      const { error: rollbackError } = await supabase
+        .from('borrows')
+        .update({
+          status: 'active',
+          returned_at: null,
+          return_shop_id: null,
+        })
+        .eq('id', matchingBorrow.id)
+
+      if (rollbackError) {
+        console.error('Return rollback error:', rollbackError)
+      }
+
+      return templates.error()
     }
 
     // Get shop info and returner profile in parallel

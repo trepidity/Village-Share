@@ -1,5 +1,14 @@
-import { describe, it, expect } from 'vitest'
-import { buildLastIntentState } from '@/lib/sms/session'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+
+const { mockResolveShopByName } = vi.hoisted(() => ({
+  mockResolveShopByName: vi.fn(),
+}))
+
+vi.mock('@/lib/sms/utils/resolve-shop', () => ({
+  resolveShopByName: mockResolveShopByName,
+}))
+
+import { buildLastIntentState, resolveNextActiveShopId } from '@/lib/sms/session'
 import type { ParsedIntent } from '@/lib/sms/intents'
 
 function makeIntent(overrides: Partial<ParsedIntent> = {}): ParsedIntent {
@@ -13,6 +22,11 @@ function makeIntent(overrides: Partial<ParsedIntent> = {}): ParsedIntent {
 }
 
 describe('buildLastIntentState', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockResolveShopByName.mockResolvedValue(null)
+  })
+
   it('returns null for a plain response with no numbered list', () => {
     const intent = makeIntent()
     const response = 'No items found matching "drill".'
@@ -101,5 +115,70 @@ describe('buildLastIntentState', () => {
     expect(options).toHaveLength(2)
     expect(options[0].name).toBe("Jared's Tools")
     expect(options[1].name).toBe("Daniel's Garage")
+  })
+})
+
+describe('resolveNextActiveShopId', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockResolveShopByName.mockResolvedValue(null)
+  })
+
+  it('keeps the current shop when there is no pending shop choice', async () => {
+    await expect(
+      resolveNextActiveShopId(makeIntent(), {
+        userId: 'user-1',
+        activeShopId: 'shop-1',
+        lastIntent: null,
+      })
+    ).resolves.toBe('shop-1')
+  })
+
+  it('uses the chosen option id for numbered shop replies', async () => {
+    await expect(
+      resolveNextActiveShopId(
+        makeIntent({ raw: '2', entities: { choiceIndex: 2 } }),
+        {
+          userId: 'user-1',
+          activeShopId: null,
+          lastIntent: {
+            awaiting_choice: {
+              intent_type: 'BORROW',
+              choice_kind: 'shop',
+              options: [
+                { id: 'shop-1', name: 'One' },
+                { id: 'shop-2', name: 'Two' },
+              ],
+            },
+          },
+        }
+      )
+    ).resolves.toBe('shop-2')
+  })
+
+  it('resolves text replies against shop option names', async () => {
+    mockResolveShopByName.mockResolvedValue('shop-2')
+
+    await expect(
+      resolveNextActiveShopId(
+        makeIntent({ raw: 'south tools' }),
+        {
+          userId: 'user-1',
+          activeShopId: 'shop-1',
+          lastIntent: {
+            awaiting_choice: {
+              intent_type: 'RETURN',
+              choice_kind: 'shop',
+              options: [
+                { id: '', name: 'North Tools' },
+                { id: '', name: 'South Tools' },
+              ],
+            },
+          },
+        }
+      )
+    ).resolves.toBe('shop-2')
+
+    expect(mockResolveShopByName).toHaveBeenCalledWith('user-1', 'South Tools')
   })
 })

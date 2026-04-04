@@ -34,9 +34,13 @@ vi.mock('@/lib/sms/router', () => ({
   }),
 }))
 
-vi.mock('@/lib/sms/session', () => ({
-  buildLastIntentState: vi.fn(() => null),
-}))
+vi.mock('@/lib/sms/session', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/sms/session')>()
+  return {
+    ...actual,
+    buildLastIntentState: vi.fn(() => null),
+  }
+})
 
 vi.mock('@/lib/sms/utils/resolve-shop', () => ({
   resolveShopByName: mockResolveShopByName,
@@ -257,5 +261,39 @@ describe('/api/chat POST', () => {
       expect.stringContaining('I found 2 items'),
       { shopId: 'shop-2' }
     )
+  })
+
+  it('updates activeShopId after a text shop-choice reply', async () => {
+    const { parseMessage } = await import('@/lib/sms/parser')
+
+    vi.mocked(parseMessage).mockReturnValue({
+      type: 'UNKNOWN',
+      confidence: 1,
+      entities: {},
+      raw: 'Two',
+    })
+    mockResolveShopByName.mockResolvedValue('shop-2')
+
+    const res = await POST(
+      makeRequest({
+        message: 'Two',
+        activeShopId: 'shop-1',
+        lastIntent: {
+          awaiting_choice: {
+            intent_type: 'BORROW',
+            choice_kind: 'shop',
+            options: [
+              { id: '', name: 'One' },
+              { id: '', name: 'Two' },
+            ],
+          },
+        },
+      })
+    )
+
+    const body = await res.json()
+
+    expect(mockResolveShopByName).toHaveBeenCalledWith('user-123', 'Two')
+    expect(body.activeShopId).toBe('shop-2')
   })
 })
