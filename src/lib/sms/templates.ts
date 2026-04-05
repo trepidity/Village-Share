@@ -221,6 +221,7 @@ export const templates = {
  * e.g. "Feb 14" or "Feb 14, 2027" if not the current year.
  */
 function formatShortDate(isoDate: string): string {
+  const tz = process.env.TZ || 'America/Chicago'
   const date = new Date(isoDate)
   const now = new Date()
   const sameYear = date.getFullYear() === now.getFullYear()
@@ -228,5 +229,6 @@ function formatShortDate(isoDate: string): string {
     month: 'short',
     day: 'numeric',
     ...(sameYear ? {} : { year: 'numeric' }),
+    timeZone: tz,
   })
 }

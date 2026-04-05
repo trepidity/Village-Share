@@ -1,3 +1,5 @@
+const APP_TZ = process.env.TZ || 'America/Chicago'
+
 /**
  * Format a date for display
  */
@@ -6,6 +8,7 @@ export function formatDate(date: string | Date): string {
     month: 'short',
     day: 'numeric',
     year: 'numeric',
+    timeZone: APP_TZ,
   })
 }
 
