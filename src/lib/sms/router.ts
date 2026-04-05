@@ -44,7 +44,6 @@ function sourceOf(context: SmsContext): 'chat' | 'sms' {
  */
 const SHOP_REQUIRED_INTENTS = new Set([
   'BORROW',
-  'RETURN',
   'RESERVE',
   'ADD_ITEM',
   'REMOVE_ITEM',
@@ -98,16 +97,6 @@ export async function routeIntent(
           intent.entities.shopName
         )
         if (byName) shopId = byName
-      }
-
-      // For RETURN, allow the explicit return location to double as the
-      // collection context when it resolves unambiguously.
-      if (!shopId && intent.type === 'RETURN' && intent.entities.locationName) {
-        const byLocation = await resolveShopByName(
-          context.userId,
-          intent.entities.locationName
-        )
-        if (byLocation) shopId = byLocation
       }
 
       // Fall back to generic resolution if still no shop
@@ -189,7 +178,6 @@ export async function routeIntent(
       case 'RETURN':
         return await handleReturn(intent, {
           userId: context.userId,
-          shopId: shopId!,
         })
 
       case 'RESERVE':

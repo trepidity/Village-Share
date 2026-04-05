@@ -51,12 +51,7 @@ describe('RETURN routing', () => {
     mocks.insert.mockResolvedValue({ error: null })
   })
 
-  it('uses locationName as shop context for RETURN when it resolves', async () => {
-    mocks.resolveShopByName.mockImplementation(async (_userId: string, name: string) => {
-      if (name === "jaben's shop") return 'shop-jaben'
-      return null
-    })
-
+  it('routes RETURN without requiring shop resolution', async () => {
     const reply = await routeIntent(
       {
         type: 'RETURN',
@@ -83,10 +78,7 @@ describe('RETURN routing', () => {
           locationName: "jaben's shop",
         }),
       }),
-      expect.objectContaining({
-        userId: 'user-1',
-        shopId: 'shop-jaben',
-      })
+      { userId: 'user-1' }
     )
     expect(reply).toBe('returned')
   })

@@ -5,7 +5,6 @@ import type { ParsedIntent } from '@/lib/sms/intents'
 
 interface ReturnContext {
   userId: string
-  shopId: string
 }
 
 /**
@@ -21,13 +20,12 @@ export async function handleReturn(
     const supabase = createAdminClient()
     let itemName = intent.entities.itemName
 
-    // Find the user's active borrows, joining with items to match by name
+    // Find the user's active borrows across all shops
     const { data: borrows, error: borrowError } = await supabase
       .from('borrows')
       .select('id, item_id, from_shop_id, items!inner(id, name, shop_id)')
       .eq('borrower_id', context.userId)
       .eq('status', 'active')
-      .eq('from_shop_id', context.shopId)
 
     if (borrowError) {
       console.error('Return lookup error:', borrowError)
@@ -71,10 +69,12 @@ export async function handleReturn(
     let locationShopId = matchingBorrow.from_shop_id // default: back to origin
     let locationShopName: string | undefined
 
-    if (intent.entities.locationName) {
+    // "return X to Y" puts destination in shopName; "return X at Y" uses locationName
+    const returnDestination = intent.entities.locationName ?? intent.entities.shopName
+    if (returnDestination) {
       const resolvedLocationId = await resolveShopByName(
         context.userId,
-        intent.entities.locationName
+        returnDestination
       )
       if (resolvedLocationId) {
         locationShopId = resolvedLocationId
@@ -137,12 +137,12 @@ export async function handleReturn(
       return templates.error()
     }
 
-    // Get shop info and returner profile in parallel
+    // Get originating shop info and returner profile in parallel
     const [{ data: shop }, { data: returnerProfile }] = await Promise.all([
       supabase
         .from('shops')
         .select('short_name, owner_id')
-        .eq('id', context.shopId)
+        .eq('id', matchingBorrow.from_shop_id)
         .single(),
       supabase
         .from('profiles')
