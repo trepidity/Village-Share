@@ -19,11 +19,7 @@ export async function handleReturn(
 ): Promise<string> {
   try {
     const supabase = createAdminClient()
-    const itemName = intent.entities.itemName
-
-    if (!itemName) {
-      return 'What item are you returning? Text RETURN [item name].'
-    }
+    let itemName = intent.entities.itemName
 
     // Find the user's active borrows, joining with items to match by name
     const { data: borrows, error: borrowError } = await supabase
@@ -39,7 +35,19 @@ export async function handleReturn(
     }
 
     if (!borrows || borrows.length === 0) {
-      return templates.itemNotFound(itemName)
+      return templates.itemNotFound(itemName ?? 'that item')
+    }
+
+    if (!itemName) {
+      if (borrows.length === 1) {
+        itemName = (borrows[0].items as unknown as {
+          id: string
+          name: string
+          shop_id: string
+        }).name
+      } else {
+        return 'What item are you returning? Text RETURN [item name].'
+      }
     }
 
     // Find borrow matching the item name (fuzzy, all words in any order)
